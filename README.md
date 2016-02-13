@@ -1,4 +1,7 @@
-# UAVCAN GUI Tool
+UAVCAN GUI Tool
+===============
+
+[![Gitter](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/UAVCAN/general)
 
 This repository will eventually contain a cross-platform (Win/Linux/Mac)
 UAVCAN GUI tool for diagnostics and development.
