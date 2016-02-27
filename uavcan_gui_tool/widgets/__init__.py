@@ -337,7 +337,7 @@ class FilterBar(QWidget):
                                                     on_clicked=self._on_commit)
 
             self._regex_button = make_icon_button('code', 'Use regular expressions', self, checkable=True,
-                                                  on_clicked=self._on_commit)
+                                                  checked=True, on_clicked=self._on_commit)
 
             self._case_sensitive_button = make_icon_button('text-height', 'Filter expression is case sensitive', self,
                                                            checkable=True, on_clicked=self._on_commit)
