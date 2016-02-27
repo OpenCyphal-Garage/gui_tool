@@ -11,7 +11,7 @@ import re
 import queue
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QApplication, QWidget, \
     QComboBox, QCompleter, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QStringListModel
 from PyQt5.QtGui import QColor, QKeySequence, QFont
 from logging import getLogger
 import qtawesome
@@ -236,15 +236,18 @@ class SearchMatcherChain:
 
 
 class SearchBarComboBox(CommitableComboBoxWithHistory):
-    def __init__(self, parent):
+    def __init__(self, parent, completion_model=None):
         super(SearchBarComboBox, self).__init__(parent)
 
         self.setFont(get_monospace_font())
         self.setToolTip('Enter the search pattern here')
-        combo_completer = QCompleter()
-        combo_completer.setCaseSensitivity(Qt.CaseSensitive)
-        combo_completer.setModel(self.model())
-        self.setCompleter(combo_completer)
+        completer = QCompleter(self)
+        completer.setCaseSensitivity(Qt.CaseSensitive)
+        if completion_model is not None:
+            completer.setModel(completion_model)
+        else:
+            completer.setModel(self.model())
+        self.setCompleter(completer)
 
 
 class SearchBar(QWidget):
@@ -317,7 +320,7 @@ class SearchBar(QWidget):
 
 class FilterBar(QWidget):
     class Filter(QWidget):
-        def __init__(self, parent):
+        def __init__(self, parent, pattern_completion_model):
             super(FilterBar.Filter, self).__init__(parent)
 
             self.on_commit = lambda: None
@@ -326,7 +329,7 @@ class FilterBar(QWidget):
             self._remove_button = make_icon_button('remove', 'Remove this filter', self,
                                                    on_clicked=lambda: self.on_remove(self))
 
-            self._bar = SearchBarComboBox(self)
+            self._bar = SearchBarComboBox(self, pattern_completion_model)
             self._bar.on_commit = self._on_commit
             self._bar.setFocus(Qt.OtherFocusReason)
 
@@ -377,6 +380,8 @@ class FilterBar(QWidget):
 
         self._filters = []
 
+        self._pattern_completion_model = QStringListModel(self)
+
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
@@ -396,7 +401,7 @@ class FilterBar(QWidget):
             self.on_filter(None)
 
     def _on_add_filter(self):
-        new_filter = self.Filter(self)
+        new_filter = self.Filter(self, self._pattern_completion_model)
         new_filter.on_remove = self._on_remove_filter
         new_filter.on_commit = self._do_filter
 
