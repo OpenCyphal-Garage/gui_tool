@@ -1,0 +1,3 @@
+[submodule "uavcan_gui_tool/pyqtgraph"]
+	path = uavcan_gui_tool/pyqtgraph
+	url = https://github.com/pyqtgraph/pyqtgraph
