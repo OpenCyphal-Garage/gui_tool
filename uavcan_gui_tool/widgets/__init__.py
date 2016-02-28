@@ -591,10 +591,12 @@ def map_7bit_to_color(value):
     return col
 
 
-def get_monospace_font():
+def get_monospace_font(small=False):
     font = QFont('DejaVu Sans Mono')
     font.setStyleHint(QFont().Monospace)
     font.setFamily('monospace')
+    if small:
+        font.setPointSize(7)
     return font
 
 

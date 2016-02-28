@@ -36,6 +36,7 @@ from widgets.local_node import LocalNodeWidget
 from widgets.log_message_display import LogMessageDisplayWidget
 from widgets.bus_monitor import BusMonitorWidget
 from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
+from widgets.file_server import FileServerWidget
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -63,6 +64,7 @@ class MainWindow(QMainWindow):
         self._bus_monitor_widget = BusMonitorWidget(self, node, iface_name)
         self._dynamic_node_id_allocation_widget = DynamicNodeIDAllocatorWidget(self, node,
                                                                                self._node_monitor_widget.monitor)
+        self._file_server_widget = FileServerWidget(self, node)
 
         outer_hbox = QHBoxLayout(self)
 
@@ -70,6 +72,7 @@ class MainWindow(QMainWindow):
         left_vbox.addWidget(self._local_node_widget)
         left_vbox.addWidget(self._node_monitor_widget)
         left_vbox.addWidget(self._log_message_widget)
+        left_vbox.addWidget(self._file_server_widget)
 
         right_vbox = QVBoxLayout(self)
         right_vbox.addWidget(self._bus_monitor_widget, 1)
