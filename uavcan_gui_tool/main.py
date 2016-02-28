@@ -25,7 +25,7 @@ for path in ('pyqtgraph', 'pyuavcan'):
 # Importing other stuff once the logging has been configured
 import uavcan
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QTimer, Qt
 
@@ -66,24 +66,37 @@ class MainWindow(QMainWindow):
                                                                                self._node_monitor_widget.monitor)
         self._file_server_widget = FileServerWidget(self, node)
 
-        outer_hbox = QHBoxLayout(self)
+        def make_vbox(*widgets, stretch_index=None):
+            box = QVBoxLayout(self)
+            for idx, w in enumerate(widgets):
+                box.addWidget(w, 1 if idx == stretch_index else 0)
+            container = QWidget(self)
+            container.setLayout(box)
+            return container
 
-        left_vbox = QVBoxLayout(self)
-        left_vbox.addWidget(self._local_node_widget)
-        left_vbox.addWidget(self._node_monitor_widget)
-        left_vbox.addWidget(self._log_message_widget)
-        left_vbox.addWidget(self._file_server_widget)
+        def make_splitter(orientation, *widgets, stretch_index=None):
+            spl = QSplitter(orientation, self)
+            for w in widgets:
+                spl.addWidget(w)
+            if stretch_index is not None:
+                spl.setStretchFactor(stretch_index, 1)
+            else:
+                for x in range(len(widgets)):
+                    spl.setStretchFactor(x, 1)
+            return spl
 
-        right_vbox = QVBoxLayout(self)
-        right_vbox.addWidget(self._bus_monitor_widget, 1)
-        right_vbox.addWidget(self._dynamic_node_id_allocation_widget)
-
-        outer_hbox.addLayout(left_vbox, 1)
-        outer_hbox.addLayout(right_vbox, 1)
-
-        outer_widget = QWidget(self)
-        outer_widget.setLayout(outer_hbox)
-        self.setCentralWidget(outer_widget)
+        self.setCentralWidget(make_splitter(Qt.Horizontal,
+                                            make_splitter(Qt.Vertical,
+                                                          make_vbox(self._local_node_widget,
+                                                                    self._node_monitor_widget,
+                                                                    stretch_index=1),
+                                                          make_vbox(self._log_message_widget,
+                                                                    self._file_server_widget,
+                                                                    stretch_index=0)),
+                                            make_splitter(Qt.Vertical,
+                                                          self._bus_monitor_widget,
+                                                          self._dynamic_node_id_allocation_widget,
+                                                          stretch_index=0)))
 
     def _spin_node(self):
         # We're running the node in the GUI thread.
