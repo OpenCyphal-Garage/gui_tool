@@ -125,6 +125,9 @@ def main():
                                     node_info=node_info,
                                     mode=uavcan.protocol.NodeStatus().MODE_OPERATIONAL,
                                     **iface_kwargs)
+
+            # Making sure the interface is alright
+            node.spin(0.1)
         except Exception as ex:
             show_error('Fatal error', 'Could not initialize UAVCAN node', ex)
         else:
