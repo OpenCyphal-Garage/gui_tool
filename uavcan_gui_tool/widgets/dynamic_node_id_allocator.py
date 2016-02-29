@@ -7,12 +7,11 @@
 #
 
 import uavcan
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QPushButton, QComboBox, QFileDialog, \
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QPushButton, QFileDialog, \
     QCompleter, QDirModel
 from PyQt5.QtCore import QTimer
 from logging import getLogger
-from . import BasicTable, map_7bit_to_color, get_monospace_font, get_icon, show_error, CommitableComboBoxWithHistory, \
-    make_icon_button
+from . import BasicTable, get_monospace_font, get_icon, show_error, CommitableComboBoxWithHistory, make_icon_button
 
 
 logger = getLogger(__name__)
@@ -27,7 +26,7 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
 
     COLUMNS = [
         BasicTable.Column('Node ID',
-                          lambda e: (e[1], map_7bit_to_color(e[1]))),
+                          lambda e: e[1]),
         BasicTable.Column('Unique ID',
                           lambda e: unique_id_to_string(e[0]),
                           resize_mode=QHeaderView.Stretch),

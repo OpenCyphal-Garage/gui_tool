@@ -510,9 +510,8 @@ class RealtimeLogWidget(QWidget):
         if self.started:
             self._table.setUpdatesEnabled(False)
 
+            do_scroll = False
             if not self.paused:
-                self._table.clearSelection()
-
                 while True:
                     try:
                         item = self._queue.get_nowait()
@@ -522,10 +521,11 @@ class RealtimeLogWidget(QWidget):
                     row = self._table.rowCount()
                     self._table.insertRow(row)
                     self._table.set_row(row, item)
+                    do_scroll = True
 
             self._table.setUpdatesEnabled(True)
 
-            if not self.paused:
+            if do_scroll:
                 self._table.scrollToBottom()
 
             self._row_count.setText(str(self._table.rowCount()))
@@ -591,12 +591,10 @@ def map_7bit_to_color(value):
     return col
 
 
-def get_monospace_font(small=False):
+def get_monospace_font():
     font = QFont('DejaVu Sans Mono')
     font.setStyleHint(QFont().Monospace)
     font.setFamily('monospace')
-    if small:
-        font.setPointSize(7)
     return font
 
 

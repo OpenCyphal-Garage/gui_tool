@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QP
 from PyQt5.QtCore import Qt
 from logging import getLogger
 from helpers import UAVCANStructInspector
-from . import BasicTable, map_7bit_to_color, RealtimeLogWidget
+from . import BasicTable, RealtimeLogWidget
+
 
 logger = getLogger(__name__)
 
@@ -29,7 +30,7 @@ def log_level_to_color(level):
 class LogMessageDisplayWidget(QGroupBox):
     COLUMNS = [
         BasicTable.Column('Node',
-                          lambda e: (e.transfer.source_node_id, map_7bit_to_color(e.transfer.source_node_id))),
+                          lambda e: e.transfer.source_node_id),
         BasicTable.Column('Local Time',
                           lambda e: datetime.datetime.fromtimestamp(e.transfer.ts_real)
                           .strftime('%H:%M:%S.%f')[:-3],

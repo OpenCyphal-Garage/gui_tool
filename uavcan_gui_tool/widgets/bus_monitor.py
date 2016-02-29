@@ -197,7 +197,7 @@ class BusMonitorWidget(QGroupBox):
                               resize_mode=QHeaderView.Stretch),
         ]
 
-        self._log_widget = RealtimeLogWidget(self, columns=self._columns, font=get_monospace_font(small=True),
+        self._log_widget = RealtimeLogWidget(self, columns=self._columns, font=get_monospace_font(),
                                              post_redraw_hook=self._redraw_hook)
         self._log_widget.on_selection_changed = self._update_measurement_display
 
