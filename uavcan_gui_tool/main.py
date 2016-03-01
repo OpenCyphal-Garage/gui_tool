@@ -55,8 +55,7 @@ class MainWindow(QMainWindow):
         self._node_spin_timer = QTimer(self)
         self._node_spin_timer.timeout.connect(self._spin_node)
         self._node_spin_timer.setSingleShot(False)
-
-        self._node_spin_timer.start(1)
+        self._node_spin_timer.start(10)
 
         self._node_monitor_widget = NodeMonitorWidget(self, node)
         self._local_node_widget = LocalNodeWidget(self, node)
