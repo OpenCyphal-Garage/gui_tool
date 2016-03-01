@@ -305,7 +305,7 @@ class BusMonitorWidget(QGroupBox):
 
         def get_load_str(num_frames, dt):
             if dt >= 1e-6:
-                return 'average load %.1f FPS' % (num_frames / dt)
+                return 'average load %.1f FPS' % (max(num_frames - 1, 1) / dt)
             return 'average load is unknown'
 
         if min_row == max_row:
