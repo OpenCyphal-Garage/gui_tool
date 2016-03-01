@@ -149,7 +149,11 @@ def main():
     window = MainWindow(app_icon, node, iface)
     window.show()
 
-    exit(app.exec_())
+    exit_code = app.exec_()
+
+    node.close()
+
+    exit(exit_code)
 
 
 if __name__ == '__main__':
