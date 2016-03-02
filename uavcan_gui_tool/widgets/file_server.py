@@ -88,9 +88,10 @@ class FileServerWidget(QGroupBox):
 
         self._path_widgets = []
 
-        self._start_stop_button = make_icon_button('rocket', 'Launch/stop file server', self,
-                                                   on_clicked=self._on_start_stop)
-        self._start_stop_button.setEnabled(False)
+        self._start_button = make_icon_button('rocket', 'Launch/stop the file server', self,
+                                              checkable=True,
+                                              on_clicked=self._on_start_stop)
+        self._start_button.setEnabled(False)
 
         self._tmr = QTimer(self)
         self._tmr.setSingleShot(False)
@@ -104,7 +105,7 @@ class FileServerWidget(QGroupBox):
         layout = QVBoxLayout(self)
 
         controls_layout = QHBoxLayout(self)
-        controls_layout.addWidget(self._start_stop_button)
+        controls_layout.addWidget(self._start_button)
         controls_layout.addWidget(self._add_path_button)
         controls_layout.addStretch(1)
 
@@ -112,7 +113,8 @@ class FileServerWidget(QGroupBox):
         self.setLayout(layout)
 
     def _update_on_timer(self):
-        self._start_stop_button.setEnabled(not self._node.is_anonymous)
+        self._start_button.setEnabled(not self._node.is_anonymous)
+        self._start_button.setChecked(self._file_server is not None)
         if self._file_server:
             for path, count in self._file_server.path_hit_counters.items():
                 for w in self._path_widgets:
@@ -139,11 +141,9 @@ class FileServerWidget(QGroupBox):
             except Exception:
                 logger.error('Could not stop file server', exc_info=True)
             self._file_server = None
-            self._start_stop_button.setIcon(get_icon('rocket'))
             logger.info('File server stopped')
         else:
             self._file_server = uavcan.app.file_server.FileServer(self._node)
-            self._start_stop_button.setIcon(get_icon('hand-stop-o'))
             self._sync_paths()
 
     def _on_remove_path(self, path):
