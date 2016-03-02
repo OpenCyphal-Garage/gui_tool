@@ -47,15 +47,16 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
         self._allocation_table_update_timer.start(500)
         self._allocation_table_update_timer.timeout.connect(self._update_table)
 
-        self._toggle_start_stop = QPushButton(self)
-        self._toggle_start_stop.clicked.connect(self._on_toggle_start_stop)
+        self._start_stop_button = make_icon_button('rocket', 'Launch/stop the dynamic node ID allocation server', self,
+                                                   checkable=True)
+        self._start_stop_button.clicked.connect(self._on_start_stop_button)
 
         self._database_file = CommitableComboBoxWithHistory(self)
         self._database_file.setAcceptDrops(True)
         self._database_file.setToolTip('Path to the allocation table file')
         self._database_file.setCurrentText(self.DEFAULT_DATABASE_FILE)
         self._database_file.addItem(self._database_file.currentText())
-        self._database_file.on_commit = self._on_toggle_start_stop
+        self._database_file.on_commit = self._on_start_stop_button
 
         self._select_database_file = make_icon_button('folder-open-o', 'Open allocation table file', self,
                                                       on_clicked=self._on_select_database_file)
@@ -69,7 +70,7 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
         layout = QVBoxLayout(self)
 
         controls_layout = QHBoxLayout(self)
-        controls_layout.addWidget(self._toggle_start_stop)
+        controls_layout.addWidget(self._start_stop_button)
         controls_layout.addWidget(self._database_file, 1)
         controls_layout.addWidget(self._select_database_file)
 
@@ -86,29 +87,22 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
     def _sync_gui(self):
         # Syncing the GUI state
         if self._allocator:
-            self._toggle_start_stop.setIcon(get_icon('hand-stop-o'))
-            self._toggle_start_stop.setToolTip('Stop')
+            self._start_stop_button.setChecked(True)
             self.setEnabled(True)
             self._database_file.setEnabled(False)
             self._select_database_file.setEnabled(False)
         else:
             self._database_file.setEnabled(True)
             self._select_database_file.setEnabled(True)
-            self._toggle_start_stop.setIcon(get_icon('rocket'))
-            if self._node.is_anonymous:
-                self._toggle_start_stop.setToolTip('Allocator cannot be launched on an anonymous node')
-                self.setEnabled(False)
-            else:
-                self._toggle_start_stop.setToolTip('Launch')
-                self.setEnabled(True)
+            self._start_stop_button.setChecked(False)
+            self.setEnabled(not self._node.is_anonymous)
 
-    def _on_toggle_start_stop(self):
+    def _on_start_stop_button(self):
         # Serving the start/stop request
         if self._allocator:
             self._allocator.close()
             self._allocator = None
         else:
-            # TODO: Database storage
             try:
                 db_file = self._database_file.currentText()
                 self._allocator = uavcan.app.dynamic_node_id.CentralizedServer(self._node, self._node_monitor,
