@@ -52,7 +52,7 @@ class NodeTable(BasicTable):
                                      node_health_to_color(e.status.health))),
         BasicTable.Column('Uptime',
                           lambda e: datetime.timedelta(days=0, seconds=e.status.uptime_sec)),
-        BasicTable.Column('Vendor-specific status',
+        BasicTable.Column('Vendor-specific',
                           lambda e: '%d  0x%04x' % (e.status.vendor_specific_status_code,
                                                     e.status.vendor_specific_status_code))
     ]
@@ -126,6 +126,7 @@ class NodeMonitorWidget(QGroupBox):
         self.setTitle('Online nodes (double click for more options)')
 
         self._node = node
+        self.on_info_window_requested = lambda *_: None
 
         self._table = NodeTable(self, node)
         self._table.info_requested.connect(self._show_info_window)
@@ -142,4 +143,4 @@ class NodeMonitorWidget(QGroupBox):
         self._table.close()
 
     def _show_info_window(self, node_id):
-        print(node_id)
+        self.on_info_window_requested(node_id)

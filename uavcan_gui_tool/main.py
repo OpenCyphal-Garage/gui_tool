@@ -37,6 +37,7 @@ from widgets.log_message_display import LogMessageDisplayWidget
 from widgets.bus_monitor import BusMonitorWidget
 from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
 from widgets.file_server import FileServerWidget
+from widgets.node_properties import NodePropertiesWindow
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -57,7 +58,11 @@ class MainWindow(QMainWindow):
         self._node_spin_timer.setSingleShot(False)
         self._node_spin_timer.start(10)
 
+        self._node_windows = {}  # node ID : window object
+
         self._node_monitor_widget = NodeMonitorWidget(self, node)
+        self._node_monitor_widget.on_info_window_requested = self._show_node_window
+
         self._local_node_widget = LocalNodeWidget(self, node)
         self._log_message_widget = LogMessageDisplayWidget(self, node)
         self._bus_monitor_widget = BusMonitorWidget(self, node, iface_name)
@@ -96,6 +101,18 @@ class MainWindow(QMainWindow):
                                                           self._bus_monitor_widget,
                                                           self._dynamic_node_id_allocation_widget,
                                                           stretch_index=0)))
+
+    def _show_node_window(self, node_id):
+        if node_id in self._node_windows:
+            self._node_windows[node_id].close()
+            self._node_windows[node_id].setParent(None)
+            self._node_windows[node_id].deleteLater()
+            del self._node_windows[node_id]
+
+        w = NodePropertiesWindow(self, self._node, node_id, self._file_server_widget,
+                                 self._node_monitor_widget.monitor)
+        w.show()
+        self._node_windows[node_id] = w
 
     def _spin_node(self):
         # We're running the node in the GUI thread.
