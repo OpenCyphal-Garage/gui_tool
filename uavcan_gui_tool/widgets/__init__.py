@@ -446,11 +446,10 @@ class RealtimeLogWidget(QWidget):
         self._pause = make_icon_button('pause', 'Pause updates; data received while paused will not be lost', self,
                                        checkable=True)
 
-        self._toggle_start_stop = make_icon_button('', 'Start/stop capturing', self,
-                                                   on_clicked=self._on_start_stop_toggled)
-
-        self._started = not started_by_default
-        self._on_start_stop_toggled()       # Inverting the initial state
+        self._start_button = make_icon_button('video-camera', 'Start/stop capturing', self,
+                                              checkable=True,
+                                              checked=started_by_default,
+                                              on_clicked=self._on_start_button_clicked)
 
         self._search_bar = SearchBar(self)
         self._search_bar.on_search = self._search
@@ -472,7 +471,7 @@ class RealtimeLogWidget(QWidget):
 
         controls_layout = QHBoxLayout(self)
         controls_layout.addWidget(self._clear_button)
-        controls_layout.addWidget(self._toggle_start_stop)
+        controls_layout.addWidget(self._start_button)
         controls_layout.addWidget(self._pause)
         controls_layout.addWidget(self._search_bar.show_search_bar_button)
         controls_layout.addWidget(self._filter_bar.add_filter_button)
@@ -536,14 +535,7 @@ class RealtimeLogWidget(QWidget):
 
         self.post_redraw_hook()
 
-    def _on_start_stop_toggled(self):
-        if self._started:
-            self._started = False
-            self._toggle_start_stop.setIcon(get_icon('video-camera'))
-        else:
-            self._started = True
-            self._toggle_start_stop.setIcon(get_icon('hand-stop-o'))
-
+    def _on_start_button_clicked(self):
         self._pause.setChecked(False)
 
     def add_item_async(self, item):
@@ -559,7 +551,7 @@ class RealtimeLogWidget(QWidget):
 
     @property
     def started(self):
-        return self._started
+        return self._start_button.isChecked()
 
 
 def get_icon(name):
