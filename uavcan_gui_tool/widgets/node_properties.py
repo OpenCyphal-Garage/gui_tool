@@ -9,7 +9,7 @@
 import uavcan
 import datetime
 from functools import partial
-from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QFrame, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
 from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable
@@ -75,12 +75,6 @@ class InfoBox(QGroupBox):
                     hbox.addWidget(f, stretch_ratio)
                 layout.addLayout(hbox, row, 1)
                 return fields
-
-        def add_separator():
-            f = QFrame(self)
-            f.setFrameShape(QFrame.HLine)
-            f.setFrameShadow(QFrame.Sunken)
-            layout.addWidget(f, layout.rowCount(), 0, 1, 2)
 
         self._node_id_name = make_field('Node ID / Name', field_stretch_ratios=(1, 8))
         self._node_id_name[0].set(target_node_id)
@@ -173,10 +167,10 @@ class Controls(QGroupBox):
         self.setLayout(layout)
 
     def _do_restart(self):
-        pass
+        self.window().show_message('Restart requested')
 
     def _do_firmware_update(self):
-        pass
+        self.window().show_message('Firmware update requested')
 
 
 class ConfigParams(QGroupBox):
@@ -236,11 +230,23 @@ class NodePropertiesWindow(QDialog):
         self._controls = Controls(self, node, target_node_id, file_server_widget)
         self._config_params = ConfigParams(self, node, target_node_id)
 
+        self._status_bar = QStatusBar(self)
+        self._status_bar.setSizeGripEnabled(False)
+
         layout = QVBoxLayout(self)
         layout.addWidget(self._info_box)
         layout.addWidget(self._controls)
         layout.addWidget(self._config_params)
+        layout.addWidget(self._status_bar)
+
+        left, top, right, bottom = layout.getContentsMargins()
+        bottom = 0
+        layout.setContentsMargins(left, top, right, bottom)
+
         self.setLayout(layout)
+
+    def show_message(self, text, *fmt, duration=0):
+        self._status_bar.showMessage(text % fmt, duration * 1000)
 
     @property
     def target_node_id(self):
