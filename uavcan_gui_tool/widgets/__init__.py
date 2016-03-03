@@ -426,6 +426,8 @@ class FilterBar(QWidget):
 
 class LabelWithIcon(QPushButton):
     def __init__(self, icon, text, parent):
+        if isinstance(icon, str):
+            icon = get_icon(icon)
         super(LabelWithIcon, self).__init__(icon, text, parent)
         self.setEnabled(False)
 
@@ -558,8 +560,8 @@ def get_icon(name):
     return qtawesome.icon('fa.' + name)
 
 
-def make_icon_button(icon_name, tool_tip, parent, checkable=False, checked=False, on_clicked=None):
-    b = QPushButton('', parent)
+def make_icon_button(icon_name, tool_tip, parent, checkable=False, checked=False, on_clicked=None, text=''):
+    b = QPushButton(text, parent)
     if icon_name:
         b.setIcon(get_icon(icon_name))
     if on_clicked:

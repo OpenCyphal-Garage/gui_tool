@@ -8,10 +8,11 @@
 
 import uavcan
 import datetime
+from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QFrame, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
-from . import get_monospace_font
+from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable
 from helpers import UAVCANStructInspector
 
 
@@ -102,6 +103,8 @@ class InfoBox(QGroupBox):
             self.setEnabled(False)
             return
 
+        self.setEnabled(True)
+
         if entry.status:        # Status should be always available...
             inspector = UAVCANStructInspector(entry.status)
             self._mode.set(inspector.field_to_string('mode', keep_literal=True))
@@ -151,6 +154,76 @@ class InfoBox(QGroupBox):
             self._cert_of_auth.disable()
 
 
+class Controls(QGroupBox):
+    def __init__(self, parent, node, target_node_id, file_server_widget):
+        super(Controls, self).__init__(parent)
+        self.setTitle('Node controls')
+
+        self._node = node
+        self._target_node_id = target_node_id
+
+        self._restart_button = make_icon_button('power-off', 'Restart the node [uavcan.protocol.RestartNode]', self,
+                                                text='Restart', on_clicked=self._do_restart)
+
+        self._update_button = make_icon_button('bug',
+                                               'Request firmware update [uavcan.protocol.file.BeginFirmwareUpdate]',
+                                               self, text='Update firmware', on_clicked=self._do_firmware_update)
+
+        layout = QHBoxLayout(self)
+        layout.addWidget(self._restart_button, 1)
+        layout.addWidget(self._update_button, 1)
+        self.setLayout(layout)
+
+    def _do_restart(self):
+        pass
+
+    def _do_firmware_update(self):
+        pass
+
+
+class ConfigParams(QGroupBox):
+    def __init__(self, parent, node, target_node_id):
+        super(ConfigParams, self).__init__(parent)
+        self.setTitle('Configuration parameters')
+
+        self._node = node
+        self._target_node_id = target_node_id
+
+        self._read_all_button = make_icon_button('refresh', 'Fetch all config parameters from the node', self,
+                                                 text='Fetch', on_clicked=self._do_reload)
+
+        opcodes = uavcan.protocol.param.ExecuteOpcode.Request()
+
+        self._save_button = \
+            make_icon_button('database', 'Commit configuration to the non-volatile storage [OPCODE_SAVE]', self,
+                             text='Store', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_SAVE))
+
+        self._erase_button = \
+            make_icon_button('eraser', 'Clear the non-volatile configuration storage [OPCODE_ERASE]', self,
+                             text='Erase', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_ERASE))
+
+        self._param_count_label = LabelWithIcon('list', '0', self)
+        self._param_count_label.setToolTip('Number of loaded configuration parameters')
+
+        self._param_table = BasicTable(self, [], multi_line_rows=True, font=get_monospace_font())
+
+        layout = QVBoxLayout(self)
+        controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(self._read_all_button, 1)
+        controls_layout.addWidget(self._save_button, 1)
+        controls_layout.addWidget(self._erase_button, 1)
+        controls_layout.addWidget(self._param_count_label, 0)
+        layout.addLayout(controls_layout)
+        layout.addWidget(self._param_table)
+        self.setLayout(layout)
+
+    def _do_reload(self):
+        pass
+
+    def _do_execute_opcode(self):
+        pass
+
+
 class NodePropertiesWindow(QDialog):
     def __init__(self, parent, node, target_node_id, file_server_widget, node_monitor):
         super(NodePropertiesWindow, self).__init__(parent)
@@ -162,9 +235,13 @@ class NodePropertiesWindow(QDialog):
         self._file_server_widget = file_server_widget
 
         self._info_box = InfoBox(self, target_node_id, node_monitor)
+        self._controls = Controls(self, node, target_node_id, file_server_widget)
+        self._config_params = ConfigParams(self, node, target_node_id)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self._info_box)
+        layout.addWidget(self._controls)
+        layout.addWidget(self._config_params)
         self.setLayout(layout)
 
     @property
