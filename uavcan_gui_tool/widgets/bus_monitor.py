@@ -201,6 +201,12 @@ class BusMonitorWidget(QGroupBox):
                                              post_redraw_hook=self._redraw_hook)
         self._log_widget.on_selection_changed = self._update_measurement_display
 
+        self._stat_display = QLabel('0 / 0 / 0', self)
+        stat_display_label = QLabel('TX / RX / FPS: ', self)
+        stat_display_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self._log_widget.custom_area_layout.addWidget(stat_display_label)
+        self._log_widget.custom_area_layout.addWidget(self._stat_display)
+
         def flip_row_mark(row, col):
             if col == 0:
                 item = self._log_widget.table.item(row, col)
@@ -219,10 +225,6 @@ class BusMonitorWidget(QGroupBox):
 
         self._traffic_stat = TrafficStatCounter()
 
-        self._stat_frames_tx = QLabel('N/A', self)
-        self._stat_frames_rx = QLabel('N/A', self)
-        self._stat_traffic = QLabel('N/A', self)
-
         self._load_plot = PlotWidget(background=(0, 0, 0))
         self._load_plot.setRange(xRange=(0, self.DEFAULT_PLOT_X_RANGE), padding=0)
         self._load_plot.setMaximumHeight(150)
@@ -240,26 +242,9 @@ class BusMonitorWidget(QGroupBox):
         layout = QVBoxLayout(self)
 
         layout.addWidget(self._log_widget, 1)
-
-        stat_vars_layout = QGridLayout(self)
-        stat_layout_next_row = 0
-
-        def add_stat_row(label, value):
-            nonlocal stat_layout_next_row
-            stat_vars_layout.addWidget(QLabel(label, self), stat_layout_next_row, 0)
-            stat_vars_layout.addWidget(value, stat_layout_next_row, 1)
-            value.setMinimumWidth(75)
-            stat_layout_next_row += 1
-
-        add_stat_row('Frames transmitted:', self._stat_frames_tx)
-        add_stat_row('Frames received:', self._stat_frames_rx)
-        add_stat_row('Frames per second:', self._stat_traffic)
-        stat_vars_layout.setRowStretch(stat_layout_next_row, 1)
-
         stat_layout = QHBoxLayout(self)
-        stat_layout.addLayout(stat_vars_layout)
+        # TODO: add CAN adapter status information display
         stat_layout.addWidget(self._load_plot, 1)
-
         layout.addLayout(stat_layout, 0)
         self.setLayout(layout)
 
@@ -268,7 +253,6 @@ class BusMonitorWidget(QGroupBox):
 
     def _update_stat(self):
         bus_load, ts_mono = self._traffic_stat.get_frames_per_second()
-        self._stat_traffic.setText(str(int(bus_load + 0.5)))
 
         if len(self._bus_load_samples[0]) >= self.BUS_LOAD_PLOT_MAX_SAMPLES:
             self._bus_load_samples[0].pop(0)
@@ -286,8 +270,8 @@ class BusMonitorWidget(QGroupBox):
         self._load_plot.setRange(xRange=(xmin, xmax), padding=0)
 
     def _redraw_hook(self):
-        self._stat_frames_tx.setText(str(self._traffic_stat.tx))
-        self._stat_frames_rx.setText(str(self._traffic_stat.rx))
+        bus_load, _ = self._traffic_stat.get_frames_per_second()
+        self._stat_display.setText('%d / %d / %d' % (self._traffic_stat.tx, self._traffic_stat.rx, bus_load))
 
     def _frame_hook(self, direction, frame):
         self._traffic_stat.add_frame(direction, frame)

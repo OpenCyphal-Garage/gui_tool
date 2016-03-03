@@ -477,7 +477,12 @@ class RealtimeLogWidget(QWidget):
         controls_layout.addWidget(self._pause)
         controls_layout.addWidget(self._search_bar.show_search_bar_button)
         controls_layout.addWidget(self._filter_bar.add_filter_button)
-        controls_layout.addStretch(1)
+
+        self._custom_area_layout = QHBoxLayout(self)
+        self._custom_area_layout.setContentsMargins(0, 0, 0, 0)
+        controls_layout.addLayout(self._custom_area_layout, 1)
+        controls_layout.addStretch()
+
         controls_layout.addWidget(self._row_count)
 
         layout.addLayout(controls_layout)
@@ -554,6 +559,10 @@ class RealtimeLogWidget(QWidget):
     @property
     def started(self):
         return self._start_button.isChecked()
+
+    @property
+    def custom_area_layout(self):
+        return self._custom_area_layout
 
 
 def get_icon(name):
