@@ -387,20 +387,17 @@ class ConfigParams(QGroupBox):
         self._target_node_id = target_node_id
 
         self._read_all_button = make_icon_button('refresh', 'Fetch all config parameters from the node', self,
-                                                 text='Fetch', on_clicked=self._do_reload)
+                                                 text='Fetch All', on_clicked=self._do_reload)
 
         opcodes = uavcan.protocol.param.ExecuteOpcode.Request()
 
         self._save_button = \
             make_icon_button('database', 'Commit configuration to the non-volatile storage [OPCODE_SAVE]', self,
-                             text='Store', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_SAVE))
+                             text='Store All', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_SAVE))
 
         self._erase_button = \
             make_icon_button('eraser', 'Clear the non-volatile configuration storage [OPCODE_ERASE]', self,
-                             text='Erase', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_ERASE))
-
-        self._param_count_label = LabelWithIcon('list', '0', self)
-        self._param_count_label.setToolTip('Number of loaded configuration parameters')
+                             text='Erase All', on_clicked=partial(self._do_execute_opcode, opcodes.OPCODE_ERASE))
 
         columns = [
             BasicTable.Column('Idx',
@@ -431,7 +428,6 @@ class ConfigParams(QGroupBox):
         controls_layout.addWidget(self._read_all_button, 1)
         controls_layout.addWidget(self._save_button, 1)
         controls_layout.addWidget(self._erase_button, 1)
-        controls_layout.addWidget(self._param_count_label, 0)
         layout.addLayout(controls_layout)
         layout.addWidget(self._table)
         self.setLayout(layout)
@@ -455,7 +451,6 @@ class ConfigParams(QGroupBox):
         self._params.append(e.response)
         self._table.setRowCount(self._table.rowCount() + 1)
         self._table.set_row(self._table.rowCount() - 1, (index, e.response))
-        self._param_count_label.setText(str(self._table.rowCount()))
 
         try:
             index += 1
