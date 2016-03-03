@@ -35,6 +35,11 @@ def show_error(title, text, informative_text, parent=None):
     mbox.exec()
 
 
+def request_confirmation(title, text, parent=None):
+    reply = QMessageBox(parent).question(parent, title, text, QMessageBox().Yes | QMessageBox().No)
+    return reply == QMessageBox().Yes
+
+
 class BasicTable(QTableWidget):
     class Column:
         def __init__(self, name, renderer, resize_mode=QHeaderView.ResizeToContents,

@@ -9,14 +9,18 @@
 import uavcan
 import datetime
 from functools import partial
-from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar
+from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
+    QHeaderView
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
-from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable
+from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable, show_error, request_confirmation
 from helpers import UAVCANStructInspector
 
 
 logger = getLogger(__name__)
+
+
+REQUEST_PRIORITY = 30
 
 
 class FieldValueWidget(QLineEdit):
@@ -174,6 +178,17 @@ class Controls(QGroupBox):
 
 
 class ConfigParams(QGroupBox):
+    @staticmethod
+    def render_union(u):
+        value = getattr(u, uavcan.get_active_union_field(u))
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float):
+            return round(value, 9)
+        if 'uavcan.protocol.param.Empty' in str(value):
+            return ''
+        return value
+
     def __init__(self, parent, node, target_node_id):
         super(ConfigParams, self).__init__(parent)
         self.setTitle('Configuration parameters')
@@ -197,7 +212,26 @@ class ConfigParams(QGroupBox):
         self._param_count_label = LabelWithIcon('list', '0', self)
         self._param_count_label.setToolTip('Number of loaded configuration parameters')
 
-        self._param_table = BasicTable(self, [], multi_line_rows=True, font=get_monospace_font())
+        columns = [
+            BasicTable.Column('Idx',
+                              lambda m: m[0]),
+            BasicTable.Column('Name',
+                              lambda m: m[1].name,
+                              resize_mode=QHeaderView.Stretch),
+            BasicTable.Column('Type',
+                              lambda m: uavcan.get_active_union_field(m[1].value).replace('_value', '')),
+            BasicTable.Column('Value',
+                              lambda m: self.render_union(m[1].value),
+                              resize_mode=QHeaderView.Stretch),
+            BasicTable.Column('Default',
+                              lambda m: self.render_union(m[1].default_value)),
+            BasicTable.Column('Min',
+                              lambda m: self.render_union(m[1].min_value)),
+            BasicTable.Column('Max',
+                              lambda m: self.render_union(m[1].max_value)),
+        ]
+
+        self._table = BasicTable(self, columns, multi_line_rows=True, font=get_monospace_font())
 
         layout = QVBoxLayout(self)
         controls_layout = QHBoxLayout(self)
@@ -206,14 +240,67 @@ class ConfigParams(QGroupBox):
         controls_layout.addWidget(self._erase_button, 1)
         controls_layout.addWidget(self._param_count_label, 0)
         layout.addLayout(controls_layout)
-        layout.addWidget(self._param_table)
+        layout.addWidget(self._table)
         self.setLayout(layout)
 
-    def _do_reload(self):
-        pass
+    def _on_fetch_response(self, index, e):
+        if e is None:
+            self.window().show_message('Param fetch failed: request timed out')
+            return
 
-    def _do_execute_opcode(self):
-        pass
+        if len(e.response.name) == 0:
+            self.window().show_message('%d params fetched successfully', index)
+            return
+
+        self._table.setRowCount(self._table.rowCount() + 1)
+        self._table.set_row(self._table.rowCount() - 1, (index, e.response))
+        self._param_count_label.setText(str(self._table.rowCount()))
+
+        try:
+            index += 1
+            self.window().show_message('Requesting index %d', index)
+            self._node.defer(0.1, lambda: self._node.request(uavcan.protocol.param.GetSet.Request(index=index),
+                                                             self._target_node_id,
+                                                             partial(self._on_fetch_response, index),
+                                                             priority=REQUEST_PRIORITY))
+        except Exception as ex:
+            logger.error('Param fetch error', exc_info=True)
+            self.window().show_message('Could not send param get request: %r', ex)
+
+    def _do_reload(self):
+        try:
+            index = 0
+            self._node.request(uavcan.protocol.param.GetSet.Request(index=index),
+                               self._target_node_id,
+                               partial(self._on_fetch_response, index),
+                               priority=REQUEST_PRIORITY)
+        except Exception as ex:
+            show_error('Node error', 'Could not send param get request', ex, self)
+        else:
+            self.window().show_message('Param fetch request sent')
+            self._table.setRowCount(0)
+
+    def _do_execute_opcode(self, opcode):
+        request = uavcan.protocol.param.ExecuteOpcode.Request(opcode=opcode)
+        opcode_str = UAVCANStructInspector(request).field_to_string('opcode', keep_literal=True)
+
+        if not request_confirmation('Confirm opcode execution',
+                                    'Do you really want to execute param opcode %s on the node %r?' %
+                                    (opcode_str, self._target_node_id), self):
+            self.window().show_message('Rejected')
+            return
+
+        def callback(e):
+            if e is None:
+                self.window().show_message('Opcode execution response for %s has timed out', opcode_str)
+            else:
+                self.window().show_message('Opcode execution response for %s: %s', opcode_str, e.response)
+
+        try:
+            self._node.request(request, self._target_node_id, callback, priority=REQUEST_PRIORITY)
+            self.window().show_message('Param opcode %s requested', opcode_str)
+        except Exception as ex:
+            show_error('Node error', 'Could not send param opcode execution request', ex, self)
 
 
 class NodePropertiesWindow(QDialog):
