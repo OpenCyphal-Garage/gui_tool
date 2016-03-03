@@ -39,6 +39,11 @@ class FieldValueWidget(QLineEdit):
         if self.text() != value:
             self.setText(value)
 
+    def clear(self):
+        if not self.isEnabled():
+            self.setEnabled(True)
+        super(FieldValueWidget, self).clear()
+
 
 class InfoBox(QGroupBox):
     def __init__(self, parent, target_node_id, node_monitor):
@@ -55,18 +60,18 @@ class InfoBox(QGroupBox):
 
         layout = QGridLayout(self)
 
-        def make_field(name, initial_value=None, multiple_field_stretch_ratios=None):
+        def make_field(name, field_stretch_ratios=None):
             row = layout.rowCount()
             layout.addWidget(QLabel(name, self), row, 0)
-            if not multiple_field_stretch_ratios:
-                field = FieldValueWidget(self, initial_value)
+            if not field_stretch_ratios:
+                field = FieldValueWidget(self)
                 layout.addWidget(field, row, 1)
                 return field
             else:
-                fields = [FieldValueWidget(self, initial_value) for _ in multiple_field_stretch_ratios]
+                fields = [FieldValueWidget(self) for _ in field_stretch_ratios]
                 hbox = QHBoxLayout(self)
                 hbox.setContentsMargins(0, 0, 0, 0)
-                for f, stretch_ratio in zip(fields, multiple_field_stretch_ratios):
+                for f, stretch_ratio in zip(fields, field_stretch_ratios):
                     hbox.addWidget(f, stretch_ratio)
                 layout.addLayout(hbox, row, 1)
                 return fields
@@ -77,18 +82,14 @@ class InfoBox(QGroupBox):
             f.setFrameShadow(QFrame.Sunken)
             layout.addWidget(f, layout.rowCount(), 0, 1, 2)
 
-        self._node_id = make_field('Node ID', target_node_id)
-        self._name = make_field('Name')
+        self._node_id_name = make_field('Node ID / Name', field_stretch_ratios=(1, 8))
+        self._node_id_name[0].set(target_node_id)
 
-        self._mode = make_field('Mode')
-        self._health = make_field('Health')
-        self._vendor_status = make_field('Vendor-specific code', multiple_field_stretch_ratios=(1, 1, 2))
-        self._uptime = make_field('Uptime')
+        self._mode_health_uptime = make_field('Mode / Health / Uptime', field_stretch_ratios=(1, 1, 1))
+        self._vendor_status = make_field('Vendor-specific code', field_stretch_ratios=(1, 1, 2))
 
-        self._sw_version = make_field('Software version')
-        self._sw_crc = make_field('Software CRC-64-WE')
-        self._hw_version = make_field('Hardware version')
-        self._unique_id = make_field('Unique ID')
+        self._sw_version_crc = make_field('Software version/CRC64', field_stretch_ratios=(1, 1))
+        self._hw_version_uid = make_field('Hardware version/UID', field_stretch_ratios=(1, 6))
         self._cert_of_auth = make_field('Cert. of authenticity')
 
         self.setLayout(layout)
@@ -107,8 +108,9 @@ class InfoBox(QGroupBox):
 
         if entry.status:        # Status should be always available...
             inspector = UAVCANStructInspector(entry.status)
-            self._mode.set(inspector.field_to_string('mode', keep_literal=True))
-            self._health.set(inspector.field_to_string('health', keep_literal=True))
+            self._mode_health_uptime[0].set(inspector.field_to_string('mode', keep_literal=True))
+            self._mode_health_uptime[1].set(inspector.field_to_string('health', keep_literal=True))
+            self._mode_health_uptime[2].set(datetime.timedelta(days=0, seconds=entry.status.uptime_sec))
 
             vssc = entry.status.vendor_specific_status_code
             self._vendor_status[0].set(vssc)
@@ -116,41 +118,37 @@ class InfoBox(QGroupBox):
             self._vendor_status[2].set('0b' + bin((vssc >> 8) & 0xFF)[2:].zfill(8) +
                                        '_' + bin(vssc & 0xFF)[2:].zfill(8))
 
-            self._uptime.set(datetime.timedelta(days=0, seconds=entry.status.uptime_sec))
-
         if entry.info:
             inf = entry.info
-            self._name.set(inf.name.decode())
+            self._node_id_name[1].set(inf.name.decode())
 
             swver = '%d.%d' % (inf.software_version.major, inf.software_version.minor)
             if inf.software_version.optional_field_flags & inf.software_version.OPTIONAL_FIELD_FLAG_VCS_COMMIT:
                 swver += '.%08x' % inf.software_version.vcs_commit
-            self._sw_version.set(swver)
+            self._sw_version_crc[0].set(swver)
 
             if inf.software_version.optional_field_flags & inf.software_version.OPTIONAL_FIELD_FLAG_IMAGE_CRC:
-                self._sw_crc.set('0x%016x' % inf.software_version.image_crc)
+                self._sw_version_crc[1].set('0x%016x' % inf.software_version.image_crc)
             else:
-                self._sw_crc.disable()
+                self._sw_version_crc[1].clear()
 
-            self._hw_version.set('%d.%d' % (inf.hardware_version.major, inf.hardware_version.minor))
+            self._hw_version_uid[0].set('%d.%d' % (inf.hardware_version.major, inf.hardware_version.minor))
 
-            uid = inf.hardware_version.unique_id
-            if not all([x == 0 for x in uid]):
-                self._unique_id.set(' '.join(['%02x' % x for x in uid]))
+            if not all([x == 0 for x in inf.hardware_version.unique_id]):
+                self._hw_version_uid[1].set(' '.join(['%02x' % x for x in inf.hardware_version.unique_id]))
             else:
-                self._unique_id.disable()
+                self._hw_version_uid[1].clear()
 
             if len(inf.hardware_version.certificate_of_authenticity):
-                self._cert_of_auth.set(' '.join(['%02x' % x
-                                                     for x in inf.hardware_version.certificate_of_authenticity]))
+                self._cert_of_auth.set(' '.join(['%02x' % x for x in inf.hardware_version.certificate_of_authenticity]))
             else:
-                self._cert_of_auth.disable()
+                self._cert_of_auth.clear()
         else:
-            self._name.disable()
-            self._sw_version.disable()
-            self._sw_crc.disable()
-            self._hw_version.disable()
-            self._unique_id.disable()
+            self._node_id_name[1].disable()
+            self._sw_version_crc[0].disable()
+            self._sw_version_crc[1].disable()
+            self._hw_version_uid[0].disable()
+            self._hw_version_uid[1].disable()
             self._cert_of_auth.disable()
 
 
@@ -228,7 +226,7 @@ class NodePropertiesWindow(QDialog):
     def __init__(self, parent, node, target_node_id, file_server_widget, node_monitor):
         super(NodePropertiesWindow, self).__init__(parent)
         self.setWindowTitle('Node Properties [%d]' % target_node_id)
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(640)
 
         self._target_node_id = target_node_id
         self._node = node
