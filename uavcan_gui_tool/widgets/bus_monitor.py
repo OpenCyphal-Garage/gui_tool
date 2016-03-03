@@ -10,7 +10,7 @@ import datetime
 import time
 import os
 import uavcan
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QLabel, QGridLayout, QSizePolicy
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QLabel, QSplitter, QSizePolicy
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, mkPen
@@ -239,13 +239,11 @@ class BusMonitorWidget(QGroupBox):
         self._bus_load_samples = [], []
         self._started_at_mono = time.monotonic()
 
-        layout = QVBoxLayout(self)
-
-        layout.addWidget(self._log_widget, 1)
-        stat_layout = QHBoxLayout(self)
-        # TODO: add CAN adapter status information display
-        stat_layout.addWidget(self._load_plot, 1)
-        layout.addLayout(stat_layout, 0)
+        splitter = QSplitter(Qt.Vertical, self)
+        splitter.addWidget(self._log_widget)
+        splitter.addWidget(self._load_plot)
+        layout = QHBoxLayout(self)
+        layout.addWidget(splitter)
         self.setLayout(layout)
 
     def close(self):
