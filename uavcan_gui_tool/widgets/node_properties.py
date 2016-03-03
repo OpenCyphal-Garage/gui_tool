@@ -174,7 +174,6 @@ class Controls(QGroupBox):
         request = uavcan.protocol.RestartNode.Request(magic_number=uavcan.protocol.RestartNode.Request().MAGIC_NUMBER)
         if not request_confirmation('Confirm node restart',
                                     'Do you really want to send request uavcan.protocol.RestartNode?', self):
-            self.window().show_message('Rejected')
             return
 
         def callback(e):
@@ -302,7 +301,6 @@ class ConfigParams(QGroupBox):
 
         if not request_confirmation('Confirm opcode execution',
                                     'Do you really want to execute param opcode %s?' % opcode_str, self):
-            self.window().show_message('Rejected')
             return
 
         def callback(e):
