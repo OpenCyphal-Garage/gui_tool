@@ -12,7 +12,7 @@ import queue
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QApplication, QWidget, \
     QComboBox, QCompleter, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt, QTimer, QStringListModel
-from PyQt5.QtGui import QColor, QKeySequence, QFont
+from PyQt5.QtGui import QColor, QKeySequence, QFont, QFontInfo
 from logging import getLogger
 import qtawesome
 from functools import partial
@@ -586,9 +586,17 @@ def map_7bit_to_color(value):
 
 
 def get_monospace_font():
-    font = QFont('DejaVu Sans Mono')
+    preferred = ['Consolas', 'DejaVu Sans Mono', 'Monospace', 'Lucida Console', 'Monaco']
+    for name in preferred:
+        font = QFont(name)
+        if QFontInfo(font).fixedPitch():
+            logger.debug('Preferred monospace font: %r', font.toString())
+            return font
+
+    font = QFont()
     font.setStyleHint(QFont().Monospace)
     font.setFamily('monospace')
+    logger.debug('Using fallback monospace font: %r', font.toString())
     return font
 
 

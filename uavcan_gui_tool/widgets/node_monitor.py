@@ -8,7 +8,7 @@
 
 import datetime
 import uavcan
-from . import BasicTable
+from . import BasicTable, get_monospace_font
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHeaderView
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from logging import getLogger
@@ -60,7 +60,7 @@ class NodeTable(BasicTable):
     info_requested = pyqtSignal([int])
 
     def __init__(self, parent, node):
-        super(NodeTable, self).__init__(parent, self.COLUMNS)
+        super(NodeTable, self).__init__(parent, self.COLUMNS, font=get_monospace_font())
 
         self.doubleClicked.connect(self._on_double_click)
 
