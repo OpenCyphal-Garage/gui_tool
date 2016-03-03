@@ -171,10 +171,26 @@ class Controls(QGroupBox):
         self.setLayout(layout)
 
     def _do_restart(self):
-        self.window().show_message('Restart requested')
+        request = uavcan.protocol.RestartNode.Request(magic_number=uavcan.protocol.RestartNode.Request().MAGIC_NUMBER)
+        if not request_confirmation('Confirm node restart',
+                                    'Do you really want to send request uavcan.protocol.RestartNode?', self):
+            self.window().show_message('Rejected')
+            return
+
+        def callback(e):
+            if e is None:
+                self.window().show_message('Restart request timed out')
+            else:
+                self.window().show_message('Restart request response: %s', e.response)
+
+        try:
+            self._node.request(request, self._target_node_id, callback, priority=REQUEST_PRIORITY)
+            self.window().show_message('Restart requested')
+        except Exception as ex:
+            show_error('Node error', 'Could not send restart request', ex, self)
 
     def _do_firmware_update(self):
-        self.window().show_message('Firmware update requested')
+        self.window().show_message('TODO: not implemented!')
 
 
 class ConfigParams(QGroupBox):
@@ -285,8 +301,7 @@ class ConfigParams(QGroupBox):
         opcode_str = UAVCANStructInspector(request).field_to_string('opcode', keep_literal=True)
 
         if not request_confirmation('Confirm opcode execution',
-                                    'Do you really want to execute param opcode %s on the node %r?' %
-                                    (opcode_str, self._target_node_id), self):
+                                    'Do you really want to execute param opcode %s?' % opcode_str, self):
             self.window().show_message('Rejected')
             return
 
