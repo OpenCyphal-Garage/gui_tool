@@ -10,7 +10,7 @@ import uavcan
 import datetime
 from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
-    QHeaderView
+    QHeaderView, QSpinBox, QCheckBox
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
 from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable, show_error, request_confirmation
@@ -192,21 +192,196 @@ class Controls(QGroupBox):
         self.window().show_message('TODO: not implemented!')
 
 
-class ConfigParams(QGroupBox):
-    @staticmethod
-    def render_union(u):
-        value = getattr(u, uavcan.get_active_union_field(u))
-        if isinstance(value, int):
-            return value
-        if isinstance(value, float):
-            return round(value, 9)
-        if 'uavcan.protocol.param.Empty' in str(value):
-            return ''
+def get_union_value(u):
+    return getattr(u, uavcan.get_active_union_field(u))
+
+
+def round_float(x):
+    return round(x, 9)
+
+
+def render_union(u):
+    value = get_union_value(u)
+    if 'boolean' in uavcan.get_active_union_field(u):
+        return bool(value)
+    if isinstance(value, int):
         return value
+    if isinstance(value, float):
+        return round_float(value)
+    if 'uavcan.protocol.param.Empty' in str(value):
+        return ''
+    return value
+
+
+class ConfigParamEditWindow(QDialog):
+    def __init__(self, parent, node, target_node_id, param_struct, update_callback):
+        super(ConfigParamEditWindow, self).__init__(parent)
+        self.setWindowTitle('Edit configuration parameter')
+        self.setModal(True)
+
+        self._node = node
+        self._target_node_id = target_node_id
+        self._param_struct = param_struct
+        self._update_callback = update_callback
+
+        min_val = get_union_value(param_struct.min_value)
+        if 'uavcan.protocol.param.Empty' in str(min_val):
+            min_val = None
+
+        max_val = get_union_value(param_struct.max_value)
+        if 'uavcan.protocol.param.Empty' in str(max_val):
+            max_val = None
+
+        value = get_union_value(param_struct.value)
+        self._value_widget = None
+        value_type = uavcan.get_active_union_field(param_struct.value)
+
+        if value_type == 'integer_value':
+            min_val = min_val if min_val is not None else -0x8000000000000000
+            max_val = max_val if max_val is not None else 0x7FFFFFFFFFFFFFFF
+            if min_val >= -0x800000 and max_val <= 0x7FFFFFFF:
+                self._value_widget = QSpinBox(self)
+                self._value_widget.setMaximum(max_val)
+                self._value_widget.setMinimum(min_val)
+                self._value_widget.setValue(value)
+        if value_type == 'real_value':
+            min_val = round_float(min_val) if min_val is not None else -3.4028235e+38
+            max_val = round_float(max_val) if max_val is not None else 3.4028235e+38
+            value = round_float(value)
+        if value_type == 'boolean_value':
+            self._value_widget = QCheckBox(self)
+            self._value_widget.setChecked(bool(value))
+
+        if self._value_widget is None:
+            self._value_widget = QLineEdit(self)
+            self._value_widget.setText(str(value))
+        self._value_widget.setFont(get_monospace_font())
+
+        layout = QGridLayout(self)
+
+        def add_const_field(label, *values):
+            row = layout.rowCount()
+            layout.addWidget(QLabel(label, self), row, 0)
+            if len(values) == 1:
+                layout.addWidget(FieldValueWidget(self, values[0]), row, 1)
+            else:
+                sub_layout = QHBoxLayout(self)
+                for idx, v in enumerate(values):
+                    sub_layout.addWidget(FieldValueWidget(self, v))
+                layout.addLayout(sub_layout, row, 1)
+
+        add_const_field('Name', param_struct.name)
+        add_const_field('Type', uavcan.get_active_union_field(param_struct.value).replace('_value', ''))
+        add_const_field('Min/Max', min_val, max_val)
+        add_const_field('Default', render_union(param_struct.default_value))
+
+        layout.addWidget(QLabel('Value', self), layout.rowCount(), 0)
+        layout.addWidget(self._value_widget, layout.rowCount() - 1, 1)
+
+        fetch_button = make_icon_button('refresh', 'Read parameter from the node', self, text='Fetch',
+                                        on_clicked=self._do_fetch)
+        set_default_button = make_icon_button('fire-extinguisher', 'Restore default value', self, text='Restore',
+                                              on_clicked=self._restore_default)
+        send_button = make_icon_button('flash', 'Send parameter to the node', self, text='Send',
+                                       on_clicked=self._do_send)
+
+        controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(fetch_button)
+        controls_layout.addWidget(set_default_button)
+        controls_layout.addWidget(send_button)
+        layout.addLayout(controls_layout, layout.rowCount(), 0, 1, 2)
+
+        self._status_bar = QStatusBar(self)
+        self._status_bar.setSizeGripEnabled(False)
+        layout.addWidget(self._status_bar, layout.rowCount(), 0, 1, 2)
+
+        left, top, right, bottom = layout.getContentsMargins()
+        bottom = 0
+        layout.setContentsMargins(left, top, right, bottom)
+
+        self.setLayout(layout)
+
+    def show_message(self, text, *fmt):
+        self._status_bar.showMessage(text % fmt)
+
+    def _assign(self, value_union):
+        value = get_union_value(value_union)
+
+        if uavcan.get_active_union_field(value_union) == 'real_value':
+            value = round_float(value)
+
+        if hasattr(self._value_widget, 'setValue'):
+            self._value_widget.setValue(value)
+            self._update_callback(value)
+        elif hasattr(self._value_widget, 'setChecked'):
+            self._value_widget.setChecked(bool(value))
+            self._update_callback(bool(value))
+        else:
+            self._value_widget.setText(str(value))
+            self._update_callback(value)
+
+    def _on_response(self, e):
+        if e is None:
+            self.show_message('Request timed out')
+        else:
+            logger.info('Param get/set response: %s', e.response)
+            self._assign(e.response.value)
+            self.show_message('Response received')
+
+    def _restore_default(self):
+        self._assign(self._param_struct.default_value)
+
+    def _do_fetch(self):
+        try:
+            request = uavcan.protocol.param.GetSet.Request(name=self._param_struct.name)
+            self._node.request(request, self._target_node_id, self._on_response, priority=REQUEST_PRIORITY)
+        except Exception as ex:
+            show_error('Node error', 'Could not send param get request', ex, self)
+        else:
+            self.show_message('Fetch request sent')
+
+    def _do_send(self):
+        value_type = uavcan.get_active_union_field(self._param_struct.value)
+
+        try:
+            if value_type == 'integer_value':
+                if hasattr(self._value_widget, 'value'):
+                    value = int(self._value_widget.value())
+                else:
+                    value = int(self._value_widget.text())
+                self._param_struct.value.integer_value = value
+            elif value_type == 'real_value':
+                value = float(self._value_widget.text())
+                self._param_struct.value.real_value = value
+            elif value_type == 'boolean_value':
+                value = bool(self._value_widget.isChecked())
+                self._param_struct.value.boolean_value = value
+            elif value_type == 'string_value':
+                value = self._value_widget.text()
+                self._param_struct.value.string_value = value
+            else:
+                raise RuntimeError('This is not happening!')
+        except Exception as ex:
+            show_error('Format error', 'Could not parse value', ex, self)
+            return
+
+        try:
+            request = uavcan.protocol.param.GetSet.Request(name=self._param_struct.name,
+                                                           value=self._param_struct.value)
+            logger.info('Sending param set request: %s', request)
+            self._node.request(request, self._target_node_id, self._on_response, priority=REQUEST_PRIORITY)
+        except Exception as ex:
+            show_error('Node error', 'Could not send param set request', ex, self)
+        else:
+            self.show_message('Set request sent')
+
+
+class ConfigParams(QGroupBox):
+    VALUE_COLUMN = 3
 
     def __init__(self, parent, node, target_node_id):
         super(ConfigParams, self).__init__(parent)
-        self.setTitle('Configuration parameters')
+        self.setTitle('Configuration parameters (double click to change)')
 
         self._node = node
         self._target_node_id = target_node_id
@@ -236,17 +411,20 @@ class ConfigParams(QGroupBox):
             BasicTable.Column('Type',
                               lambda m: uavcan.get_active_union_field(m[1].value).replace('_value', '')),
             BasicTable.Column('Value',
-                              lambda m: self.render_union(m[1].value),
+                              lambda m: render_union(m[1].value),
                               resize_mode=QHeaderView.Stretch),
             BasicTable.Column('Default',
-                              lambda m: self.render_union(m[1].default_value)),
+                              lambda m: render_union(m[1].default_value)),
             BasicTable.Column('Min',
-                              lambda m: self.render_union(m[1].min_value)),
+                              lambda m: render_union(m[1].min_value)),
             BasicTable.Column('Max',
-                              lambda m: self.render_union(m[1].max_value)),
+                              lambda m: render_union(m[1].max_value)),
         ]
 
         self._table = BasicTable(self, columns, multi_line_rows=True, font=get_monospace_font())
+        self._table.cellDoubleClicked.connect(lambda row, col: self._do_edit_param(row))
+
+        self._params = []
 
         layout = QVBoxLayout(self)
         controls_layout = QHBoxLayout(self)
@@ -258,6 +436,13 @@ class ConfigParams(QGroupBox):
         layout.addWidget(self._table)
         self.setLayout(layout)
 
+    def _do_edit_param(self, index):
+        def update_callback(value):
+            self._table.item(index, self.VALUE_COLUMN).setText(str(value))
+
+        win = ConfigParamEditWindow(self, self._node, self._target_node_id, self._params[index], update_callback)
+        win.show()
+
     def _on_fetch_response(self, index, e):
         if e is None:
             self.window().show_message('Param fetch failed: request timed out')
@@ -267,6 +452,7 @@ class ConfigParams(QGroupBox):
             self.window().show_message('%d params fetched successfully', index)
             return
 
+        self._params.append(e.response)
         self._table.setRowCount(self._table.rowCount() + 1)
         self._table.set_row(self._table.rowCount() - 1, (index, e.response))
         self._param_count_label.setText(str(self._table.rowCount()))
@@ -294,6 +480,7 @@ class ConfigParams(QGroupBox):
         else:
             self.window().show_message('Param fetch request sent')
             self._table.setRowCount(0)
+            self._params = []
 
     def _do_execute_opcode(self, opcode):
         request = uavcan.protocol.param.ExecuteOpcode.Request(opcode=opcode)
