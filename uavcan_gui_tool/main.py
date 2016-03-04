@@ -76,17 +76,13 @@ class MainWindow(QMainWindow):
                 box.addWidget(w, 1 if idx == stretch_index else 0)
             container = QWidget(self)
             container.setLayout(box)
+            container.setContentsMargins(0, 0, 0, 0)
             return container
 
-        def make_splitter(orientation, *widgets, stretch_index=None):
+        def make_splitter(orientation, *widgets):
             spl = QSplitter(orientation, self)
             for w in widgets:
                 spl.addWidget(w)
-            if stretch_index is not None:
-                spl.setStretchFactor(stretch_index, 1)
-            else:
-                for x in range(len(widgets)):
-                    spl.setStretchFactor(x, 1)
             return spl
 
         self.setCentralWidget(make_splitter(Qt.Horizontal,
@@ -98,9 +94,8 @@ class MainWindow(QMainWindow):
                                                                     self._file_server_widget,
                                                                     stretch_index=0)),
                                             make_splitter(Qt.Vertical,
-                                                          self._bus_monitor_widget,
-                                                          self._dynamic_node_id_allocation_widget,
-                                                          stretch_index=0)))
+                                                          make_vbox(self._bus_monitor_widget),
+                                                          make_vbox(self._dynamic_node_id_allocation_widget))))
 
     def _show_node_window(self, node_id):
         if node_id in self._node_windows:
