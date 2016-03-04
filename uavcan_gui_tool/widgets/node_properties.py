@@ -507,6 +507,7 @@ class ConfigParams(QGroupBox):
 
         self._table = BasicTable(self, columns, multi_line_rows=True, font=get_monospace_font())
         self._table.cellDoubleClicked.connect(lambda row, col: self._do_edit_param(row))
+        self._table.on_enter_pressed = self._on_cell_enter_pressed
 
         self._params = []
 
@@ -518,6 +519,11 @@ class ConfigParams(QGroupBox):
         layout.addLayout(controls_layout)
         layout.addWidget(self._table)
         self.setLayout(layout)
+
+    def _on_cell_enter_pressed(self, list_of_row_col_pairs):
+        unique_rows = set([row for row, _col in list_of_row_col_pairs])
+        if len(unique_rows) == 1:
+            self._do_edit_param(list(unique_rows)[0])
 
     def _do_edit_param(self, index):
         def update_callback(value):

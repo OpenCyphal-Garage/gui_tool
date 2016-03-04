@@ -62,7 +62,8 @@ class NodeTable(BasicTable):
     def __init__(self, parent, node):
         super(NodeTable, self).__init__(parent, self.COLUMNS, font=get_monospace_font())
 
-        self.doubleClicked.connect(self._on_double_click)
+        self.cellDoubleClicked.connect(lambda row, col: self._call_info_requested_callback_on_row(row))
+        self.on_enter_pressed = self._on_enter
 
         self._monitor = uavcan.app.node_monitor.NodeMonitor(node)
 
@@ -78,13 +79,14 @@ class NodeTable(BasicTable):
     def close(self):
         self._monitor.close()
 
-    def _on_double_click(self):
-        sel = self.selectedIndexes()
-        if not sel:
-            return
-        row = sel[0].row()
+    def _call_info_requested_callback_on_row(self, row):
         nid = int(self.item(row, 0).text())
         self.info_requested.emit(nid)
+
+    def _on_enter(self, list_of_row_col_pairs):
+        unique_rows = set([row for row, _col in list_of_row_col_pairs])
+        if len(unique_rows) == 1:
+            self._call_info_requested_callback_on_row(list(unique_rows)[0])
 
     def _update(self):
         known_nodes = {e.node_id: e for e in self._monitor.find_all(lambda _: True)}

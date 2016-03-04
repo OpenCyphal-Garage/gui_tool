@@ -57,6 +57,8 @@ class BasicTable(QTableWidget):
 
         self.filter = None
 
+        self.on_enter_pressed = lambda list_of_row_col_pairs: None
+
         self.setShowGrid(False)
         self.setWordWrap(False)
         self.verticalHeader().setVisible(False)
@@ -126,6 +128,10 @@ class BasicTable(QTableWidget):
                 QApplication.clipboard().setText(out_string)
         else:
             super(BasicTable, self).keyPressEvent(qkeyevent)
+
+        if qkeyevent.matches(QKeySequence.InsertParagraphSeparator):
+            if self.hasFocus():
+                self.on_enter_pressed([(x.row(), x.column()) for x in self.selectedIndexes()])
 
     def search(self, direction, matcher):
         if self.rowCount() == 0:
