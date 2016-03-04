@@ -11,11 +11,13 @@ import os
 import datetime
 from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
-    QHeaderView, QSpinBox, QCheckBox, QFileDialog
-from PyQt5.QtCore import QTimer, Qt
+    QHeaderView, QSpinBox, QCheckBox, QFileDialog, QApplication
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QPalette
 from logging import getLogger
 from . import get_monospace_font, make_icon_button, BasicTable, show_error, request_confirmation
 from helpers import UAVCANStructInspector
+from .node_monitor import node_health_to_color, node_mode_to_color
 
 
 logger = getLogger(__name__)
@@ -48,6 +50,13 @@ class FieldValueWidget(QLineEdit):
         if not self.isEnabled():
             self.setEnabled(True)
         super(FieldValueWidget, self).clear()
+
+    def set_background_color(self, color):
+        if color is None:
+            color = QApplication.palette().color(QPalette.Base)
+        palette = QPalette()
+        palette.setColor(QPalette.Base, color)
+        self.setPalette(palette)
 
 
 class InfoBox(QGroupBox):
@@ -110,6 +119,9 @@ class InfoBox(QGroupBox):
             self._mode_health_uptime[0].set(inspector.field_to_string('mode', keep_literal=True))
             self._mode_health_uptime[1].set(inspector.field_to_string('health', keep_literal=True))
             self._mode_health_uptime[2].set(datetime.timedelta(days=0, seconds=entry.status.uptime_sec))
+
+            self._mode_health_uptime[0].set_background_color(node_mode_to_color(entry.status.mode))
+            self._mode_health_uptime[1].set_background_color(node_health_to_color(entry.status.health))
 
             vssc = entry.status.vendor_specific_status_code
             self._vendor_status[0].set(vssc)
