@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
             del self._node_windows[node_id]
 
         w = NodePropertiesWindow(self, self._node, node_id, self._file_server_widget,
-                                 self._node_monitor_widget.monitor)
+                                 self._node_monitor_widget.monitor, self._dynamic_node_id_allocation_widget)
         w.show()
         self._node_windows[node_id] = w
 

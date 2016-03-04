@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 
 class PathItem(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, default=None):
         super(PathItem, self).__init__(parent)
 
         self.on_remove = lambda _: None
@@ -31,6 +31,8 @@ class PathItem(QWidget):
         completer.setModel(QDirModel(completer))
 
         self._path_bar = CommitableComboBoxWithHistory(self)
+        if default:
+            self._path_bar.setCurrentText(default)
         self._path_bar.setCompleter(completer)
         self._path_bar.setAcceptDrops(True)
         self._path_bar.setToolTip('Lookup path for file services; should point either to a file or to a directory')
@@ -157,8 +159,8 @@ class FileServerWidget(QGroupBox):
 
         self._sync_paths()
 
-    def _on_add_path(self):
-        new = PathItem(self)
+    def _on_add_path(self, default=None):
+        new = PathItem(self, default)
         new.on_path_changed = self._sync_paths
         new.on_remove = self._on_remove_path
 
@@ -166,3 +168,16 @@ class FileServerWidget(QGroupBox):
         self.layout().addWidget(new)
 
         self._sync_paths()
+
+    def add_path(self, path):
+        path = os.path.normcase(os.path.abspath(path))
+
+        for it in self._path_widgets:
+            if it.path == path:
+                return                  # Already exists, no need to add
+
+        self._on_add_path(path)
+
+    def force_start(self):
+        if not self._file_server:
+            self._on_start_stop()

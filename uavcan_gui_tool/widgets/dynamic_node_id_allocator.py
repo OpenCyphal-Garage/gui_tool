@@ -148,3 +148,7 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
                 self._allocation_table.set_row(row, (uid, nid))
 
         self._allocation_table.setUpdatesEnabled(True)
+
+    @property
+    def allocator(self):
+        return self._allocator

@@ -7,13 +7,14 @@
 #
 
 import uavcan
+import os
 import datetime
 from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
-    QHeaderView, QSpinBox, QCheckBox
+    QHeaderView, QSpinBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
-from . import get_monospace_font, make_icon_button, LabelWithIcon, BasicTable, show_error, request_confirmation
+from . import get_monospace_font, make_icon_button, BasicTable, show_error, request_confirmation
 from helpers import UAVCANStructInspector
 
 
@@ -151,12 +152,14 @@ class InfoBox(QGroupBox):
 
 
 class Controls(QGroupBox):
-    def __init__(self, parent, node, target_node_id, file_server_widget):
+    def __init__(self, parent, node, target_node_id, file_server_widget, dynamic_node_id_allocator_widget):
         super(Controls, self).__init__(parent)
         self.setTitle('Node controls')
 
         self._node = node
         self._target_node_id = target_node_id
+        self._file_server_widget = file_server_widget
+        self._dynamic_node_id_allocator_widget = dynamic_node_id_allocator_widget
 
         self._restart_button = make_icon_button('power-off', 'Restart the node [uavcan.protocol.RestartNode]', self,
                                                 text='Restart', on_clicked=self._do_restart)
@@ -189,7 +192,76 @@ class Controls(QGroupBox):
             show_error('Node error', 'Could not send restart request', ex, self)
 
     def _do_firmware_update(self):
-        self.window().show_message('TODO: not implemented!')
+        # Making sure the node is not anonymous
+        if self._node.is_anonymous:
+            show_error('Cannot request firmware update', 'Local node is anonymous',
+                       'Assign a node ID to the local node in order to issue requests (see the main window)', self)
+            return
+
+        # Checking if the dynamic node ID allocator is running; warning the user if it doesn't
+        if self._dynamic_node_id_allocator_widget.allocator is None:
+            if not request_confirmation('Suspicious configuration',
+                                        'The local dynamic node ID allocator is not running (see the main window).\n'
+                                        'Some nodes will not be able to perform firmware update unless a dynamic node '
+                                        'ID allocator is available on the bus.\n'
+                                        'Do you want to continue anyway?', self):
+                self.window().show_message('Cancelled')
+                return
+
+        # Requesting the firmware path
+        fw_file = QFileDialog().getOpenFileName(self, 'Select firmware file', '',
+                                                'Binary images (*.bin *.uavcan.bin);;All files (*.*)')
+        if not fw_file[0]:
+            self.window().show_message('Cancelled')
+            return
+        fw_file = os.path.normcase(os.path.abspath(fw_file[0]))
+
+        # Making sure the file is readable by the process
+        try:
+            with open(fw_file, 'rb') as f:
+                f.read(100)
+        except Exception as ex:
+            show_error('Bad file', 'Specified firmware file is not readable', ex, self)
+            return
+
+        # Configuring the file server
+        try:
+            self.window().show_message('Configuring the file server...')
+            self._file_server_widget.add_path(fw_file)
+            self._file_server_widget.force_start()
+        except Exception as ex:
+            show_error('File server error', 'Could not configure the file server', ex, self)
+            return
+
+        remote_fw_file = os.path.basename(fw_file)
+        logger.info('Firmware file remote path: %r', remote_fw_file)
+
+        # Sending update requests
+        def on_response(e):
+            if e is None:
+                self.window().show_message('One of firmware update requests has timed out')
+            else:
+                logger.info('Firmware update response: %s', e.response)
+                self.window().show_message('Firmware update response: %s', e.response)
+            if e is None or e.response.error != e.response.ERROR_IN_PROGRESS:
+                self._node.defer(2, send_request)
+
+        num_remaining_requests = 4
+
+        def send_request():
+            nonlocal num_remaining_requests
+            if num_remaining_requests > 0:
+                num_remaining_requests -= 1
+                request = uavcan.protocol.file.BeginFirmwareUpdate.Request(
+                    source_node_id=self._node.node_id,
+                    image_file_remote_path=uavcan.protocol.file.Path(path=remote_fw_file))
+                self.window().show_message('Sending request (%d to go) %s', num_remaining_requests, request)
+                try:
+                    self._node.request(request, self._target_node_id, on_response, priority=REQUEST_PRIORITY)
+                except Exception as ex:
+                    show_error('Firmware update error', 'Could not send firmware update request', ex, self)
+
+        send_request()  # Kickstarting the process, it will continue in the background
 
 
 def get_union_value(u):
@@ -499,7 +571,8 @@ class ConfigParams(QGroupBox):
 
 
 class NodePropertiesWindow(QDialog):
-    def __init__(self, parent, node, target_node_id, file_server_widget, node_monitor):
+    def __init__(self, parent, node, target_node_id, file_server_widget, node_monitor,
+                 dynamic_node_id_allocator_widget):
         super(NodePropertiesWindow, self).__init__(parent)
         self.setWindowTitle('Node Properties [%d]' % target_node_id)
         self.setMinimumWidth(640)
@@ -509,7 +582,7 @@ class NodePropertiesWindow(QDialog):
         self._file_server_widget = file_server_widget
 
         self._info_box = InfoBox(self, target_node_id, node_monitor)
-        self._controls = Controls(self, node, target_node_id, file_server_widget)
+        self._controls = Controls(self, node, target_node_id, file_server_widget, dynamic_node_id_allocator_widget)
         self._config_params = ConfigParams(self, node, target_node_id)
 
         self._status_bar = QStatusBar(self)
