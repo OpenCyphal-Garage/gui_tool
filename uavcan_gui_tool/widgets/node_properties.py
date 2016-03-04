@@ -368,11 +368,14 @@ class ConfigParamEditWindow(QDialog):
                                               on_clicked=self._restore_default)
         send_button = make_icon_button('flash', 'Send parameter to the node', self, text='Send',
                                        on_clicked=self._do_send)
+        cancel_button = make_icon_button('remove', 'Close this window; unsent changes will be lost', self,
+                                         text='Cancel', on_clicked=self.close)
 
-        controls_layout = QHBoxLayout(self)
-        controls_layout.addWidget(fetch_button)
-        controls_layout.addWidget(set_default_button)
-        controls_layout.addWidget(send_button)
+        controls_layout = QGridLayout(self)
+        controls_layout.addWidget(fetch_button, 0, 0)
+        controls_layout.addWidget(send_button, 0, 1)
+        controls_layout.addWidget(set_default_button, 1, 0)
+        controls_layout.addWidget(cancel_button, 1, 1)
         layout.addLayout(controls_layout, layout.rowCount(), 0, 1, 2)
 
         self._status_bar = QStatusBar(self)
