@@ -61,17 +61,19 @@ class PathItem(QWidget):
         self.on_path_changed()
 
     def _on_select_path_file(self):
-        path = QFileDialog().getOpenFileName(self, 'Add file path to be served by the file server')
+        path = QFileDialog().getOpenFileName(self, 'Add file path to be served by the file server',
+                                             os.path.expanduser('~'))
         self._path_bar.setCurrentText(path[0])
 
     def _on_select_path_directory(self):
-        path = QFileDialog().getExistingDirectory(self, 'Add directory lookup path for the file server')
+        path = QFileDialog().getExistingDirectory(self, 'Add directory lookup path for the file server',
+                                                  os.path.expanduser('~'))
         self._path_bar.setCurrentText(path)
 
     @property
     def path(self):
         p = self._path_bar.currentText()
-        return os.path.normcase(os.path.abspath(p)) if p else None
+        return os.path.normcase(os.path.abspath(os.path.expanduser(p))) if p else None
 
     def update_hit_count(self, _path, hit_count):
         self._hit_count_label.setText(str(hit_count))
@@ -170,7 +172,7 @@ class FileServerWidget(QGroupBox):
         self._sync_paths()
 
     def add_path(self, path):
-        path = os.path.normcase(os.path.abspath(path))
+        path = os.path.normcase(os.path.abspath(os.path.expanduser(path)))
 
         for it in self._path_widgets:
             if it.path == path:
