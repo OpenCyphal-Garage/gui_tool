@@ -25,12 +25,12 @@ for path in ('pyqtgraph', 'pyuavcan'):
 # Importing other stuff once the logging has been configured
 import uavcan
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
+from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtCore import QTimer, Qt
 
 from iface_configurator import run_iface_config_window
-from widgets import show_error
+from widgets import show_error, get_icon
 from widgets.node_monitor import NodeMonitorWidget
 from widgets.local_node import LocalNodeWidget
 from widgets.log_message_display import LogMessageDisplayWidget
@@ -38,6 +38,7 @@ from widgets.bus_monitor import BusMonitorWidget
 from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
 from widgets.file_server import FileServerWidget
 from widgets.node_properties import NodePropertiesWindow
+from widgets.console import ConsoleManager
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -52,6 +53,9 @@ class MainWindow(QMainWindow):
 
         self._icon = icon
         self._node = node
+        self._iface_name = iface_name
+
+        self._console_manager = ConsoleManager(self._make_console_context)
 
         self._node_spin_timer = QTimer(self)
         self._node_spin_timer.timeout.connect(self._spin_node)
@@ -69,6 +73,16 @@ class MainWindow(QMainWindow):
         self._dynamic_node_id_allocation_widget = DynamicNodeIDAllocatorWidget(self, node,
                                                                                self._node_monitor_widget.monitor)
         self._file_server_widget = FileServerWidget(self, node)
+
+        show_console_action = QAction(get_icon('terminal'), 'Interactive &console', self)
+        show_console_action.setShortcut(QKeySequence('Ctrl+T'))
+        show_console_action.setStatusTip('Open interactive console window')
+        show_console_action.triggered.connect(self._show_console_window)
+
+        widgets_menu = self.menuBar().addMenu('&View')
+        widgets_menu.addAction(show_console_action)
+
+        self.statusBar().show()
 
         def make_vbox(*widgets, stretch_index=None):
             box = QVBoxLayout(self)
@@ -97,6 +111,24 @@ class MainWindow(QMainWindow):
                                                           make_vbox(self._bus_monitor_widget),
                                                           make_vbox(self._dynamic_node_id_allocation_widget))))
 
+    def _make_console_context(self):
+        # Returns variables that will be available from the Jupyter console
+        # TODO: provide verbose usage information
+        return {
+            'can_iface_name': self._iface_name,
+            'node': self._node,
+            'node_monitor': self._node_monitor_widget.monitor,
+            'uavcan': uavcan,
+        }
+
+    def _show_console_window(self):
+        try:
+            self._console_manager.show_console_window(self)
+        except Exception as ex:
+            logger.error('Could not spawn console', exc_info=True)
+            show_error('Console error', 'Could not spawn console window', ex, self)
+            return
+
     def _show_node_window(self, node_id):
         if node_id in self._node_windows:
             self._node_windows[node_id].close()
@@ -116,6 +148,10 @@ class MainWindow(QMainWindow):
             self._node.spin(0)
         except Exception as ex:
             logger.error('Node spin error: %r', ex, exc_info=True)
+
+    def closeEvent(self, qcloseevent):
+        self._console_manager.close()
+        super(MainWindow, self).closeEvent(qcloseevent)
 
 
 def main():
