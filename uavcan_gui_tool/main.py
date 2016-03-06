@@ -38,7 +38,7 @@ from widgets.bus_monitor import BusMonitorWidget
 from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
 from widgets.file_server import FileServerWidget
 from widgets.node_properties import NodePropertiesWindow
-from widgets.console import ConsoleManager
+from widgets.console import ConsoleManager, InternalObjectDescriptor
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -112,14 +112,13 @@ class MainWindow(QMainWindow):
                                                           make_vbox(self._dynamic_node_id_allocation_widget))))
 
     def _make_console_context(self):
-        # Returns variables that will be available from the Jupyter console
-        # TODO: provide verbose usage information
-        return {
-            'can_iface_name': self._iface_name,
-            'node': self._node,
-            'node_monitor': self._node_monitor_widget.monitor,
-            'uavcan': uavcan,
-        }
+        return [
+            InternalObjectDescriptor('can_iface_name', self._iface_name, 'Name of the CAN bus interface'),
+            InternalObjectDescriptor('node', self._node, 'UAVCAN node instance'),
+            InternalObjectDescriptor('node_monitor', self._node_monitor_widget.monitor,
+                                     'Object that stores information about nodes currently available on the bus'),
+            InternalObjectDescriptor('uavcan', uavcan, 'The main Pyuavcan module')
+        ]
 
     def _show_console_window(self):
         try:

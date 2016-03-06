@@ -95,6 +95,7 @@ class JupyterConsoleWindow(QDialog):
         self._style_selector.setCurrentIndex(0)
 
         self._redirect_stdout_checkbox = QCheckBox('Redirect stdout', self)
+        self._redirect_stdout_checkbox.setToolTip('Show stdout output in this console')
         self._redirect_stdout_checkbox.stateChanged.connect(self._update_stdout_redirection)
         self._redirect_stdout_checkbox.setChecked(True)
 
@@ -133,15 +134,22 @@ class JupyterConsoleWindow(QDialog):
         logger.info('Jupyter window finalized successfully')
 
 
+class InternalObjectDescriptor:
+    def __init__(self, name, obj, usage_info):
+        self.name = name
+        self.object = obj
+        self.usage_info = usage_info
+
+
 class ConsoleManager:
     def __init__(self, context_provider=None):
         """
         Args:
-            context_provider:   A callable that returns a dict that contains name/value pairs for variables that
+            context_provider:   A callable that returns a list of InternalObjectDescriptor for variables that
                                 will be accessible from the Jupyter console.
         """
         self._kernel_manager = None
-        self._context_provider = context_provider or (lambda: {})
+        self._context_provider = context_provider or (lambda: [])
         self._context = None
         self._window = None
 
@@ -151,26 +159,21 @@ class ConsoleManager:
         if self._context is None:
             self._context = self._context_provider()
 
-            console_logger = logging.getLogger('console')
-            self._context['logger'] = console_logger
-
             try:
                 import matplotlib as mpl
                 import matplotlib.pyplot as plt
-                self._context['mpl'] = mpl
-                self._context['plt'] = plt
+                self._context.append(InternalObjectDescriptor('mpl', mpl, 'Imported module "matplotlib"'))
+                self._context.append(InternalObjectDescriptor('plt', plt, 'Imported module "matplotlib.pyplot"'))
             except ImportError:
                 pass
-
             try:
                 import numpy as np
-                self._context['np'] = np
+                self._context.append(InternalObjectDescriptor('np', np, 'Imported module "numpy"'))
             except ImportError:
                 pass
-
             try:
                 import pylab
-                self._context['pylab'] = pylab
+                self._context.append(InternalObjectDescriptor('pylab', pylab, 'Imported module "pylab"'))
             except ImportError:
                 pass
 
@@ -192,10 +195,12 @@ class ConsoleManager:
         return self._kernel_manager
 
     def _make_banner(self):
+        longest_name = max([len(x.name) for x in self._get_context()])
+
         banner = 'Available entities:\n'
-        longest_name = max(map(len, self._context.keys()))
-        for name, value in self._context.items():
-            banner += '\t%- *s -> %s\n' % (longest_name, name, type(value).__name__)
+        for obj in self._context:
+            banner += '\t%- *s -> %s\n' % (longest_name, obj.name, obj.usage_info)
+
         banner += 'Pyuavcan docs:  http://uavcan.org/Implementations/Pyuavcan\n'
         banner += 'DSDL reference: http://uavcan.org/Specification/7._List_of_standard_data_types\n'
         return banner
