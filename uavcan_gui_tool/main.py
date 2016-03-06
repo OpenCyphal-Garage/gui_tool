@@ -117,7 +117,9 @@ class MainWindow(QMainWindow):
             InternalObjectDescriptor('node', self._node, 'UAVCAN node instance'),
             InternalObjectDescriptor('node_monitor', self._node_monitor_widget.monitor,
                                      'Object that stores information about nodes currently available on the bus'),
-            InternalObjectDescriptor('uavcan', uavcan, 'The main Pyuavcan module')
+            InternalObjectDescriptor('uavcan', uavcan, 'The main Pyuavcan module'),
+            InternalObjectDescriptor('main_window', self,
+                                     'Main window object, holds references to all business logic objects')
         ]
 
     def _show_console_window(self):

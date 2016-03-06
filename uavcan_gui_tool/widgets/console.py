@@ -190,7 +190,7 @@ class ConsoleManager:
             self._kernel_manager.kernel.gui = 'qt'
 
             # Initializing context
-            self._kernel_manager.kernel.shell.push(self._get_context())
+            self._kernel_manager.kernel.shell.push({x.name : x.object for x in self._get_context()})
 
         return self._kernel_manager
 
