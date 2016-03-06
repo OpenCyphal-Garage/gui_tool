@@ -24,30 +24,31 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class JupyterWidget(RichJupyterWidget):
-    def __init__(self, parent, kernel_manager, banner=None):
-        super(JupyterWidget, self).__init__(parent)
+if JUPYTER_AVAILABLE:
+    class JupyterWidget(RichJupyterWidget):
+        def __init__(self, parent, kernel_manager, banner=None):
+            super(JupyterWidget, self).__init__(parent)
 
-        self.kernel_manager = kernel_manager
+            self.kernel_manager = kernel_manager
 
-        self.kernel_client = kernel_manager.client()
-        self.kernel_client.start_channels()
+            self.kernel_client = kernel_manager.client()
+            self.kernel_client.start_channels()
 
-        self.exit_requested.connect(self._do_stop)
+            self.exit_requested.connect(self._do_stop)
 
-        if banner:
-            self.banner = banner.strip() + '\n\n'
+            if banner:
+                self.banner = banner.strip() + '\n\n'
 
-        self._execute('%matplotlib inline', True)
+            self._execute('%matplotlib inline', True)
 
-    def write(self, text):
-        self._append_plain_text(text, True)
+        def write(self, text):
+            self._append_plain_text(text, True)
 
-    def flush(self):
-        pass
+        def flush(self):
+            pass
 
-    def _do_stop(self):
-        self.kernel_client.stop_channels()
+        def _do_stop(self):
+            self.kernel_client.stop_channels()
 
 
 def _make_jupyter_log_handler(target_widget):
