@@ -11,7 +11,6 @@ import datetime
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QPushButton, QLabel
 from PyQt5.QtCore import Qt
 from logging import getLogger
-from helpers import UAVCANStructInspector
 from . import BasicTable, RealtimeLogWidget
 
 
@@ -36,7 +35,7 @@ class LogMessageDisplayWidget(QGroupBox):
                           .strftime('%H:%M:%S.%f')[:-3],
                           searchable=False),
         BasicTable.Column('Level',
-                          lambda e: (UAVCANStructInspector(e.message.level).field_to_string('value'),
+                          lambda e: (uavcan.value_to_constant_name(e.message.level, 'value'),
                                      log_level_to_color(e.message.level))),
         BasicTable.Column('Source',
                           lambda e: e.message.source),

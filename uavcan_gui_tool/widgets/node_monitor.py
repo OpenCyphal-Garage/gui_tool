@@ -12,7 +12,6 @@ from . import BasicTable, get_monospace_font
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHeaderView
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from logging import getLogger
-from helpers import UAVCANStructInspector
 
 
 logger = getLogger(__name__)
@@ -45,10 +44,10 @@ class NodeTable(BasicTable):
                           lambda e: e.info.name if e.info else '?',
                           QHeaderView.Stretch),
         BasicTable.Column('Mode',
-                          lambda e: (UAVCANStructInspector(e.status).field_to_string('mode'),
+                          lambda e: (uavcan.value_to_constant_name(e.status, 'mode'),
                                      node_mode_to_color(e.status.mode))),
         BasicTable.Column('Health',
-                          lambda e: (UAVCANStructInspector(e.status).field_to_string('health'),
+                          lambda e: (uavcan.value_to_constant_name(e.status, 'health'),
                                      node_health_to_color(e.status.health))),
         BasicTable.Column('Uptime',
                           lambda e: datetime.timedelta(days=0, seconds=e.status.uptime_sec)),

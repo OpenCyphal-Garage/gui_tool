@@ -16,7 +16,6 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPalette
 from logging import getLogger
 from . import get_monospace_font, make_icon_button, BasicTable, show_error, request_confirmation
-from helpers import UAVCANStructInspector
 from .node_monitor import node_health_to_color, node_mode_to_color
 
 
@@ -115,9 +114,8 @@ class InfoBox(QGroupBox):
         self.setEnabled(True)
 
         if entry.status:        # Status should be always available...
-            inspector = UAVCANStructInspector(entry.status)
-            self._mode_health_uptime[0].set(inspector.field_to_string('mode', keep_literal=True))
-            self._mode_health_uptime[1].set(inspector.field_to_string('health', keep_literal=True))
+            self._mode_health_uptime[0].set(uavcan.value_to_constant_name(entry.status, 'mode', keep_literal=True))
+            self._mode_health_uptime[1].set(uavcan.value_to_constant_name(entry.status, 'health', keep_literal=True))
             self._mode_health_uptime[2].set(datetime.timedelta(days=0, seconds=entry.status.uptime_sec))
 
             self._mode_health_uptime[0].set_background_color(node_mode_to_color(entry.status.mode))
@@ -572,7 +570,7 @@ class ConfigParams(QGroupBox):
 
     def _do_execute_opcode(self, opcode):
         request = uavcan.protocol.param.ExecuteOpcode.Request(opcode=opcode)
-        opcode_str = UAVCANStructInspector(request).field_to_string('opcode', keep_literal=True)
+        opcode_str = uavcan.value_to_constant_name(request, 'opcode', keep_literal=True)
 
         if not request_confirmation('Confirm opcode execution',
                                     'Do you really want to execute param opcode %s?' % opcode_str, self):
