@@ -122,8 +122,12 @@ class MainWindow(QMainWindow):
     def _make_console_context(self):
         default_transfer_priority = 30
 
-        def default_callback(e):
-            print(uavcan.to_yaml(e))
+        def print_yaml(obj):
+            """
+            Formats the argument as YAML structure using uavcan.to_yaml(), and prints the result into stdout.
+            Use this function to print received UAVCAN structures.
+            """
+            print(uavcan.to_yaml(obj))
 
         def throw_if_anonymous():
             if self._node.is_anonymous:
@@ -133,7 +137,7 @@ class MainWindow(QMainWindow):
 
         def request(payload, server_node_id, callback=None, priority=None, timeout=None):
             """
-            Convenient wrapper over node.request().
+            Sends a service request to the specified node. This is a convenient wrapper over node.request().
             Args:
                 payload:        Request payload of type CompoundValue, e.g. uavcan.protocol.GetNodeInfo.Request()
                 server_node_id: Node ID of the node that will receive the request.
@@ -146,10 +150,10 @@ class MainWindow(QMainWindow):
                 payload = uavcan.TYPENAMES[payload.full_name].Request()
             throw_if_anonymous()
             priority = priority or default_transfer_priority
-            callback = callback or default_callback
+            callback = callback or print_yaml
             return self._node.request(payload, server_node_id, callback, priority=priority, timeout=timeout)
 
-        def broadcast(payload, priority=None, interval=None, duration=None, count=None, deadline=None):
+        def broadcast(payload, priority=None, interval=None, count=None, duration=None):
             """
             Broadcasts messages, either once or periodically in the background.
             Periodic broadcasting can be configured with one or multiple termination conditions; see the arguments for
@@ -167,15 +171,11 @@ class MainWindow(QMainWindow):
                 interval:   Broadcasting interval in seconds.
                             If specified, the message will be re-published in the background with this interval.
                             If not specified (which is default), the message will be published only once.
-                duration:   Stop background broadcasting after this amount of time, in seconds.
-                            By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
-                            unless other termination conditions are configured.
-                            Setting this value without interval is not allowed.
                 count:      Stop background broadcasting when this number of messages has been broadcasted.
                             By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
                             unless other termination conditions are configured.
                             Setting this value without interval is not allowed.
-                deadline:   Stop background broadcasting when the local monotonic clock reaches this value, in seconds.
+                duration:   Stop background broadcasting after this amount of time, in seconds.
                             By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
                             unless other termination conditions are configured.
                             Setting this value without interval is not allowed.
@@ -188,7 +188,7 @@ class MainWindow(QMainWindow):
                 print('Interpreting the first argument as:', payload.full_name + '()')
                 payload = uavcan.TYPENAMES[payload.full_name]()
 
-            if (interval is None) and (duration is not None or deadline is not None or count is not None):
+            if (interval is None) and (duration is not None or count is not None):
                 raise RuntimeError('Cannot setup background broadcaster: interval is not set')
 
             throw_if_anonymous()
@@ -201,10 +201,9 @@ class MainWindow(QMainWindow):
 
             if interval is not None:
                 num_broadcasted = 1         # The first was broadcasted before the job was launched
-                if deadline is None:
-                    if duration is None:
-                        duration = 3600 * 24 * 365 * 1000       # See you in 1000 years
-                    deadline = time.monotonic() + duration
+                if duration is None:
+                    duration = 3600 * 24 * 365 * 1000       # See you in 1000 years
+                deadline = time.monotonic() + duration
 
                 def process_next():
                     nonlocal num_broadcasted
@@ -223,16 +222,81 @@ class MainWindow(QMainWindow):
                 timer_handle = self._node.periodic(interval, process_next)
                 return timer_handle
 
+        def subscribe(uavcan_type, callback=None, count=None, duration=None, on_end=None):
+            """
+            Receives specified UAVCAN messages from the bus and delivers them to the callback.
+            Args:
+                uavcan_type:    UAVCAN message type to listen for.
+                callback:       Callback will be invoked for every received message.
+                                Default callback will print the response to stdout in YAML format.
+                count:          Number of messages to receive before terminating the subscription.
+                                Unlimited by default.
+                duration:       Amount of time, in seconds, to listen for messages before terminating the subscription.
+                                Unlimited by default.
+                on_end:         Callable that will be invoked when the subscription is terminated.
+            Returns:    Handler with method .remove(). Calling this method will terminate the subscription.
+            """
+            if (count is None and duration is None) and on_end is not None:
+                raise RuntimeError('on_end is set, but it will never be called because the subscription has '
+                                   'no termination condition')
+
+            callback = callback or print_yaml
+
+            def process_callback(e):
+                nonlocal count
+                stop_now = False
+                try:
+                    callback(e)
+                except Exception:
+                    logger.error('Unhandled exception in subscription callback for %r, subscription terminated',
+                                 uavcan_type, exc_info=True)
+                    stop_now = True
+                else:
+                    if count is not None:
+                        count -= 1
+                        if count <= 0:
+                            stop_now = True
+                if stop_now:
+                    sub_handle.remove()
+                    try:
+                        timer_handle.remove()
+                    except Exception:
+                        pass
+                    if on_end is not None:
+                        on_end()
+
+            def cancel_callback():
+                try:
+                    sub_handle.remove()
+                except Exception:
+                    pass
+                else:
+                    if on_end is not None:
+                        on_end()
+
+            sub_handle = self._node.add_handler(uavcan_type, process_callback)
+            timer_handle = None
+            if duration is not None:
+                timer_handle = self._node.defer(duration, cancel_callback)
+            return sub_handle
+
         return [
-            InternalObjectDescriptor('can_iface_name', self._iface_name, 'Name of the CAN bus interface'),
-            InternalObjectDescriptor('node', self._node, 'UAVCAN node instance'),
+            InternalObjectDescriptor('can_iface_name', self._iface_name,
+                                     'Name of the CAN bus interface'),
+            InternalObjectDescriptor('node', self._node,
+                                     'UAVCAN node instance'),
             InternalObjectDescriptor('node_monitor', self._node_monitor_widget.monitor,
                                      'Object that stores information about nodes currently available on the bus'),
             InternalObjectDescriptor('request', request,
-                                     'Use this function to send UAVCAN request transfers to other nodes'),
+                                     'Sends UAVCAN request transfers to other nodes'),
             InternalObjectDescriptor('broadcast', broadcast,
-                                     'Use this function to broadcast UAVCAN messages, once or periodically'),
-            InternalObjectDescriptor('uavcan', uavcan, 'The main Pyuavcan module'),
+                                     'Broadcasts UAVCAN messages, once or periodically'),
+            InternalObjectDescriptor('subscribe', subscribe,
+                                     'Receives UAVCAN messages'),
+            InternalObjectDescriptor('print_yaml', print_yaml,
+                                     'Prints UAVCAN entities in YAML format'),
+            InternalObjectDescriptor('uavcan', uavcan,
+                                     'The main Pyuavcan module'),
             InternalObjectDescriptor('main_window', self,
                                      'Main window object, holds references to all business logic objects')
         ]
