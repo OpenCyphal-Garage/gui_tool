@@ -19,15 +19,6 @@ from . import CommitableComboBoxWithHistory, make_icon_button, get_monospace_fon
 logger = logging.getLogger(__name__)
 
 
-def _list_message_data_type_names_with_dtid():
-    # Custom data type mappings must be configured in the library
-    message_types = []
-    for (dtid, kind), dtype in uavcan.DATATYPES.items():
-        if dtid is not None and kind == uavcan.dsdl.CompoundType.KIND_MESSAGE:
-            message_types.append(str(dtype))
-    return list(sorted(message_types))
-
-
 class QuantityDisplay(QWidget):
     def __init__(self, parent, quantity_name, units_of_measurement):
         super(QuantityDisplay, self).__init__(parent)
@@ -83,11 +74,13 @@ class RateEstimator:
 class SubscriberWindow(QDialog):
     WINDOW_NAME_PREFIX = 'Subscriber'
 
-    def __init__(self, parent, node):
+    def __init__(self, parent, node, active_data_type_detector):
         super(SubscriberWindow, self).__init__(parent)
         self.setWindowTitle(self.WINDOW_NAME_PREFIX)
 
         self._node = node
+        self._active_data_type_detector = active_data_type_detector
+        self._active_data_type_detector.message_types_updated.connect(self._update_data_type_list)
 
         self._message_queue = queue.Queue(1000000)
 
@@ -135,9 +128,7 @@ class SubscriberWindow(QDialog):
         self._type_selector.setCompleter(completer)
         self._type_selector.on_commit = self._do_start
         self._type_selector.setFont(get_monospace_font())
-        self._type_selector.addItems(_list_message_data_type_names_with_dtid())
         self._type_selector.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        self._type_selector.setCurrentText('')
         self._type_selector.setFocus(Qt.OtherFocusReason)
 
         self._active_filter = None
@@ -151,6 +142,11 @@ class SubscriberWindow(QDialog):
         self._clear_button = make_icon_button('trash-o', 'Clear output and reset stat counters', self,
                                               on_clicked=self._do_clear)
 
+        self._show_all_message_types = make_icon_button('puzzle-piece',
+                                                        'Show all known message types, not only those that are '
+                                                        'currently being exchanged over the bus',
+                                                        self, checkable=True, on_clicked=self._update_data_type_list)
+
         layout = QVBoxLayout(self)
 
         controls_layout = QHBoxLayout(self)
@@ -158,6 +154,7 @@ class SubscriberWindow(QDialog):
         controls_layout.addWidget(self._pause_button)
         controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._filter_bar.add_filter_button)
+        controls_layout.addWidget(self._show_all_message_types)
         controls_layout.addWidget(self._type_selector, 1)
         controls_layout.addWidget(self._num_rows_spinbox)
 
@@ -172,6 +169,9 @@ class SubscriberWindow(QDialog):
         layout.addLayout(stats_layout)
 
         self.setLayout(layout)
+
+        # Initial updates
+        self._update_data_type_list()
 
     def _install_filter(self, f):
         self._active_filter = f
@@ -264,6 +264,14 @@ class SubscriberWindow(QDialog):
 
         self._log_viewer.setUpdatesEnabled(True)
 
+    def _update_data_type_list(self):
+        if self._show_all_message_types.isChecked():
+            items = self._active_data_type_detector.get_names_of_all_message_types_with_data_type_id()
+        else:
+            items = self._active_data_type_detector.get_names_of_active_messages()
+        self._type_selector.clear()
+        self._type_selector.addItems(items)
+
     def _do_clear(self):
         self._num_messages_total = 0
         self._num_messages_past_filter = 0
@@ -278,5 +286,5 @@ class SubscriberWindow(QDialog):
         super(SubscriberWindow, self).closeEvent(qcloseevent)
 
     @staticmethod
-    def spawn(parent, node):
-        SubscriberWindow(parent, node).show()
+    def spawn(parent, node, active_data_type_detector):
+        SubscriberWindow(parent, node, active_data_type_detector).show()

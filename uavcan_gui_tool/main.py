@@ -31,6 +31,7 @@ from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtCore import QTimer, Qt
 
 from iface_configurator import run_iface_config_window
+from active_data_type_detector import ActiveDataTypeDetector
 from widgets import show_error, get_icon
 from widgets.node_monitor import NodeMonitorWidget
 from widgets.local_node import LocalNodeWidget
@@ -56,6 +57,8 @@ class MainWindow(QMainWindow):
         self._icon = icon
         self._node = node
         self._iface_name = iface_name
+
+        self._active_data_type_detector = ActiveDataTypeDetector(self._node)
 
         self._console_manager = ConsoleManager(self._make_console_context)
 
@@ -84,7 +87,8 @@ class MainWindow(QMainWindow):
         new_subscriber_action = QAction(get_icon('newspaper-o'), '&Subscriber', self)
         new_subscriber_action.setShortcut(QKeySequence('Ctrl+Shift+S'))
         new_subscriber_action.setStatusTip('Open subscription tool')
-        new_subscriber_action.triggered.connect(lambda: SubscriberWindow.spawn(self, self._node))
+        new_subscriber_action.triggered.connect(
+            lambda: SubscriberWindow.spawn(self, self._node, self._active_data_type_detector))
 
         tools_menu = self.menuBar().addMenu('&Tools')
         tools_menu.addAction(show_console_action)
@@ -331,6 +335,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, qcloseevent):
         self._console_manager.close()
+        self._active_data_type_detector.close()
         super(MainWindow, self).closeEvent(qcloseevent)
 
 
