@@ -124,7 +124,7 @@ class SubscriberWindow(QDialog):
 
         self._num_messages_total_label = QuantityDisplay(self, 'Total', 'msgs')
         self._num_messages_past_filter_label = QuantityDisplay(self, 'Accepted', 'msgs')
-        self._msgs_per_sec_label = QuantityDisplay(self, 'Accepting', 'msgs/sec')
+        self._msgs_per_sec_label = QuantityDisplay(self, 'Accepting', 'msg/sec')
 
         self._type_selector = CommitableComboBoxWithHistory(self)
         self._type_selector.setToolTip('Name of the message type to subscribe to')
@@ -148,7 +148,8 @@ class SubscriberWindow(QDialog):
                                                    on_clicked=self._toggle_start_stop)
         self._pause_button = make_icon_button('pause', 'Pause updates, non-displayed messages will be queued in memory',
                                               self, checkable=True)
-        self._clear_button = make_icon_button('trash-o', 'Clear output', self, on_clicked=self._do_clear)
+        self._clear_button = make_icon_button('trash-o', 'Clear output and reset stat counters', self,
+                                              on_clicked=self._do_clear)
 
         layout = QVBoxLayout(self)
 
