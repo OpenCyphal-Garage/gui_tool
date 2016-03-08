@@ -483,9 +483,9 @@ class RealtimeLogWidget(QWidget):
         layout = QVBoxLayout(self)
 
         controls_layout = QHBoxLayout(self)
-        controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._start_button)
         controls_layout.addWidget(self._pause)
+        controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._search_bar.show_search_bar_button)
         controls_layout.addWidget(self._filter_bar.add_filter_button)
 
