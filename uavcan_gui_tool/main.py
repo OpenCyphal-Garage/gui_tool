@@ -11,13 +11,14 @@
 import logging
 import sys
 import os
+import time
 
 assert sys.version[0] == '3'
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s %(name)-25s %(message)s')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__.replace('__', ''))
 
 for path in ('pyqtgraph', 'pyuavcan'):
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), path))
@@ -119,11 +120,118 @@ class MainWindow(QMainWindow):
                                                           make_vbox(self._dynamic_node_id_allocation_widget))))
 
     def _make_console_context(self):
+        default_transfer_priority = 30
+
+        def default_callback(e):
+            print(uavcan.to_yaml(e))
+
+        def throw_if_anonymous():
+            if self._node.is_anonymous:
+                raise RuntimeError('Local node is configured in anonymous mode. '
+                                   'You need to set the local node ID (see the main window) in order to be able '
+                                   'to send transfers.')
+
+        def request(payload, server_node_id, callback=None, priority=None, timeout=None):
+            """
+            Convenient wrapper over node.request().
+            Args:
+                payload:        Request payload of type CompoundValue, e.g. uavcan.protocol.GetNodeInfo.Request()
+                server_node_id: Node ID of the node that will receive the request.
+                callback:       Response callback. Default handler will print the response to stdout in YAML format.
+                priority:       Transfer priority; defaults to a very low priority.
+                timeout:        Response timeout, default is set according to the UAVCAN specification.
+            """
+            if isinstance(payload, uavcan.dsdl.CompoundType):
+                print('Interpreting the first argument as:', payload.full_name + '.Request()')
+                payload = uavcan.TYPENAMES[payload.full_name].Request()
+            throw_if_anonymous()
+            priority = priority or default_transfer_priority
+            callback = callback or default_callback
+            return self._node.request(payload, server_node_id, callback, priority=priority, timeout=timeout)
+
+        def broadcast(payload, priority=None, interval=None, duration=None, count=None, deadline=None):
+            """
+            Broadcasts messages, either once or periodically in the background.
+            Periodic broadcasting can be configured with one or multiple termination conditions; see the arguments for
+            more info. Multiple termination conditions will be joined with logical OR operation.
+            Example:
+                # Send one message:
+                >>> broadcast(uavcan.protocol.debug.KeyValue(key='key', value=123))
+                # Repeat message every 100 milliseconds for 10 seconds:
+                >>> broadcast(uavcan.protocol.NodeStatus(), interval=0.1, duration=10)
+                # Send 100 messages with 10 millisecond interval:
+                >>> broadcast(uavcan.protocol.Panic(reason_text='42!'), interval=0.01, count=100)
+            Args:
+                payload:    UAVCAN message structure, e.g. uavcan.protocol.debug.KeyValue(key='key', value=123)
+                priority:   Transfer priority; defaults to a very low priority.
+                interval:   Broadcasting interval in seconds.
+                            If specified, the message will be re-published in the background with this interval.
+                            If not specified (which is default), the message will be published only once.
+                duration:   Stop background broadcasting after this amount of time, in seconds.
+                            By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
+                            unless other termination conditions are configured.
+                            Setting this value without interval is not allowed.
+                count:      Stop background broadcasting when this number of messages has been broadcasted.
+                            By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
+                            unless other termination conditions are configured.
+                            Setting this value without interval is not allowed.
+                deadline:   Stop background broadcasting when the local monotonic clock reaches this value, in seconds.
+                            By default it is not set, meaning that the periodic broadcasting will continue indefinitely,
+                            unless other termination conditions are configured.
+                            Setting this value without interval is not allowed.
+            Returns:    If periodic broadcasting is configured, this function returns a handle that implements a method
+                        'remove()', which can be called to stop the background job.
+                        If no periodic broadcasting is configured, this function returns nothing.
+            """
+            # Validating inputs
+            if isinstance(payload, uavcan.dsdl.CompoundType):
+                print('Interpreting the first argument as:', payload.full_name + '()')
+                payload = uavcan.TYPENAMES[payload.full_name]()
+
+            if (interval is None) and (duration is not None or deadline is not None or count is not None):
+                raise RuntimeError('Cannot setup background broadcaster: interval is not set')
+
+            throw_if_anonymous()
+
+            # Business end is here
+            def do_broadcast():
+                self._node.broadcast(payload, priority or default_transfer_priority)
+
+            do_broadcast()
+
+            if interval is not None:
+                num_broadcasted = 1         # The first was broadcasted before the job was launched
+                if deadline is None:
+                    if duration is None:
+                        duration = 3600 * 24 * 365 * 1000       # See you in 1000 years
+                    deadline = time.monotonic() + duration
+
+                def process_next():
+                    nonlocal num_broadcasted
+                    try:
+                        do_broadcast()
+                    except Exception:
+                        logger.error('Automatic broadcast failed, job cancelled', exc_info=True)
+                        timer_handle.remove()
+                    else:
+                        num_broadcasted += 1
+                        if (count is not None and num_broadcasted >= count) or (time.monotonic() >= deadline):
+                            logger.info('Background publisher for %r has stopped',
+                                        uavcan.get_uavcan_data_type(payload).full_name)
+                            timer_handle.remove()
+
+                timer_handle = self._node.periodic(interval, process_next)
+                return timer_handle
+
         return [
             InternalObjectDescriptor('can_iface_name', self._iface_name, 'Name of the CAN bus interface'),
             InternalObjectDescriptor('node', self._node, 'UAVCAN node instance'),
             InternalObjectDescriptor('node_monitor', self._node_monitor_widget.monitor,
                                      'Object that stores information about nodes currently available on the bus'),
+            InternalObjectDescriptor('request', request,
+                                     'Use this function to send UAVCAN request transfers to other nodes'),
+            InternalObjectDescriptor('broadcast', broadcast,
+                                     'Use this function to broadcast UAVCAN messages, once or periodically'),
             InternalObjectDescriptor('uavcan', uavcan, 'The main Pyuavcan module'),
             InternalObjectDescriptor('main_window', self,
                                      'Main window object, holds references to all business logic objects')
