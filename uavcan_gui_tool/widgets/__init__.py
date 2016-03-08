@@ -582,6 +582,7 @@ def get_icon(name):
 
 def make_icon_button(icon_name, tool_tip, parent, checkable=False, checked=False, on_clicked=None, text=''):
     b = QPushButton(text, parent)
+    b.setFocusPolicy(Qt.NoFocus)
     if icon_name:
         b.setIcon(get_icon(icon_name))
     b.setToolTip(tool_tip)

@@ -157,7 +157,6 @@ class SubscriberWindow(QDialog):
         controls_layout.addWidget(self._pause_button)
         controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._filter_bar.add_filter_button)
-        self._filter_bar.add_filter_button.setFocusPolicy(Qt.NoFocus)  # HACK: always focused otherwise
         controls_layout.addWidget(self._type_selector, 1)
         controls_layout.addWidget(self._num_rows_spinbox)
 
