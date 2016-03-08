@@ -6,6 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import time
 import uavcan
 import logging
 import queue
@@ -31,7 +32,7 @@ class QuantityDisplay(QWidget):
     def __init__(self, parent, quantity_name, units_of_measurement):
         super(QuantityDisplay, self).__init__(parent)
 
-        self._label = QLabel('0', self)
+        self._label = QLabel('?', self)
 
         layout = QHBoxLayout(self)
         layout.addStretch(1)
@@ -44,6 +45,39 @@ class QuantityDisplay(QWidget):
 
     def set(self, value):
         self._label.setText(str(value))
+
+
+class RateEstimator:
+    def __init__(self, update_interval=0.5, averaging_period=4):
+        self._update_interval = update_interval
+        self._estimate_lifetime = update_interval * averaging_period
+        self._averaging_period = averaging_period
+        self._hist = []
+        self._checkpoint_ts = 0
+        self._events_since_checkpoint = 0
+        self._estimate_expires_at = time.monotonic()
+
+    def register_event(self, timestamp):
+        self._events_since_checkpoint += 1
+
+        dt = timestamp - self._checkpoint_ts
+        if dt >= self._update_interval:
+            # Resetting the stat if expired
+            mono_ts = time.monotonic()
+            expired = mono_ts > self._estimate_expires_at
+            self._estimate_expires_at = mono_ts + self._estimate_lifetime
+            if expired:
+                self._hist = []
+            elif len(self._hist) >= self._averaging_period:
+                self._hist.pop()
+            # Updating the history
+            self._hist.insert(0, self._events_since_checkpoint / dt)
+            self._checkpoint_ts = timestamp
+            self._events_since_checkpoint = 0
+
+    def get_rate_with_timestamp(self):
+        if time.monotonic() <= self._estimate_expires_at:
+            return (sum(self._hist) / len(self._hist)), self._checkpoint_ts
 
 
 class SubscriberWindow(QDialog):
@@ -85,6 +119,8 @@ class SubscriberWindow(QDialog):
         self._num_errors = 0
         self._num_messages_total = 0
         self._num_messages_past_filter = 0
+
+        self._msgs_per_sec_estimator = RateEstimator()
 
         self._num_messages_total_label = QuantityDisplay(self, 'Total', 'msgs')
         self._num_messages_past_filter_label = QuantityDisplay(self, 'Accepted', 'msgs')
@@ -160,6 +196,7 @@ class SubscriberWindow(QDialog):
             text = '!!! [%d] MESSAGE PROCESSING FAILED: %s' % (self._num_errors, ex)
         else:
             self._num_messages_past_filter += 1
+            self._msgs_per_sec_estimator.register_event(e.transfer.ts_monotonic)
 
         # Sending the text for later rendering
         try:
@@ -209,7 +246,9 @@ class SubscriberWindow(QDialog):
     def _do_redraw(self):
         self._num_messages_total_label.set(self._num_messages_total)
         self._num_messages_past_filter_label.set(self._num_messages_past_filter)
-        # TODO: update rate estimate
+
+        estimated_rate = self._msgs_per_sec_estimator.get_rate_with_timestamp()
+        self._msgs_per_sec_label.set('N/A' if estimated_rate is None else ('%.0f' % estimated_rate[0]))
 
         if self._pause_button.isChecked():
             return
