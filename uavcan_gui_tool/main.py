@@ -39,6 +39,7 @@ from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
 from widgets.file_server import FileServerWidget
 from widgets.node_properties import NodePropertiesWindow
 from widgets.console import ConsoleManager, InternalObjectDescriptor
+from widgets.subscriber import SubscriberWindow
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -79,8 +80,14 @@ class MainWindow(QMainWindow):
         show_console_action.setStatusTip('Open interactive console window')
         show_console_action.triggered.connect(self._show_console_window)
 
-        widgets_menu = self.menuBar().addMenu('&View')
-        widgets_menu.addAction(show_console_action)
+        new_subscriber_action = QAction(get_icon('newspaper-o'), '&Subscriber', self)
+        new_subscriber_action.setShortcut(QKeySequence('Ctrl+Shift+S'))
+        new_subscriber_action.setStatusTip('Open subscription tool')
+        new_subscriber_action.triggered.connect(lambda: SubscriberWindow.spawn(self, self._node))
+
+        tools_menu = self.menuBar().addMenu('&Tools')
+        tools_menu.addAction(show_console_action)
+        tools_menu.addAction(new_subscriber_action)
 
         self.statusBar().show()
 

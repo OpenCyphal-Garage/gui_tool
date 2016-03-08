@@ -584,12 +584,12 @@ def make_icon_button(icon_name, tool_tip, parent, checkable=False, checked=False
     b = QPushButton(text, parent)
     if icon_name:
         b.setIcon(get_icon(icon_name))
-    if on_clicked:
-        b.clicked.connect(on_clicked)
     b.setToolTip(tool_tip)
     if checkable:
         b.setCheckable(True)
         b.setChecked(checked)
+    if on_clicked:
+        b.clicked.connect(on_clicked)
     return b
 
 
