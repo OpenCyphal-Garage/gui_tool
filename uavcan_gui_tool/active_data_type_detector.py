@@ -45,11 +45,13 @@ class ActiveDataTypeDetector(QObject):
                 return
 
         if tr.service_not_message:
-            self._active_services.add(dtname)
-            self.message_types_updated.emit()
+            if dtname not in self._active_services:
+                self._active_services.add(dtname)
+                self.service_types_updated.emit()
         else:
-            self._active_messages.add(dtname)
-            self.service_types_updated.emit()
+            if dtname not in self._active_messages:
+                self._active_messages.add(dtname)
+                self.message_types_updated.emit()
 
     def get_names_of_active_messages(self):
         return list(sorted(self._active_messages))

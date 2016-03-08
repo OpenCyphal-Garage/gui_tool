@@ -265,6 +265,7 @@ class SubscriberWindow(QDialog):
         self._log_viewer.setUpdatesEnabled(True)
 
     def _update_data_type_list(self):
+        logger.info('Updating data type list')
         if self._show_all_message_types.isChecked():
             items = self._active_data_type_detector.get_names_of_all_message_types_with_data_type_id()
         else:
