@@ -12,7 +12,7 @@ import queue
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QApplication, QWidget, \
     QComboBox, QCompleter, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt, QTimer, QStringListModel
-from PyQt5.QtGui import QColor, QKeySequence, QFont, QFontInfo
+from PyQt5.QtGui import QColor, QKeySequence, QFont, QFontInfo, QIcon
 from logging import getLogger
 import qtawesome
 from functools import partial
@@ -619,6 +619,21 @@ def get_monospace_font():
     font.setFamily('monospace')
     logger.debug('Using fallback monospace font: %r', font.toString())
     return font
+
+
+def get_app_icon():
+    global _APP_ICON_OBJECT
+    try:
+        return _APP_ICON_OBJECT
+    except NameError:
+        # noinspection PyBroadException
+        try:
+            _APP_ICON_OBJECT = QIcon(os.path.join(os.path.dirname(__file__), '..', 'icon.png'))
+        except Exception:
+            logger.error('Could not load icon', exc_info=True)
+            _APP_ICON_OBJECT = QIcon()
+
+    return _APP_ICON_OBJECT
 
 
 def flash(sender, message, *format_args, duration=0):

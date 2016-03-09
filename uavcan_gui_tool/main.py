@@ -9,8 +9,9 @@
 
 # Initializing logging first
 import logging
-import sys
+import multiprocessing
 import os
+import sys
 import time
 
 assert sys.version[0] == '3'
@@ -32,7 +33,8 @@ from PyQt5.QtCore import QTimer, Qt
 
 from iface_configurator import run_iface_config_window
 from active_data_type_detector import ActiveDataTypeDetector
-from widgets import show_error, get_icon
+
+from widgets import show_error, get_icon, get_app_icon
 from widgets.node_monitor import NodeMonitorWidget
 from widgets.local_node import LocalNodeWidget
 from widgets.log_message_display import LogMessageDisplayWidget
@@ -42,23 +44,25 @@ from widgets.file_server import FileServerWidget
 from widgets.node_properties import NodePropertiesWindow
 from widgets.console import ConsoleManager, InternalObjectDescriptor
 from widgets.subscriber import SubscriberWindow
+from widgets.plotter import PlotterManager
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, icon, node, iface_name):
+    def __init__(self, node, iface_name):
         # Parent
         super(MainWindow, self).__init__()
         self.setWindowTitle('UAVCAN GUI Tool')
-        self.setWindowIcon(icon)
+        self.setWindowIcon(get_app_icon())
 
-        self._icon = icon
         self._node = node
         self._iface_name = iface_name
 
         self._active_data_type_detector = ActiveDataTypeDetector(self._node)
+
+        self._plotter_manager = PlotterManager(self._node)
 
         self._console_manager = ConsoleManager(self._make_console_context)
 
@@ -90,9 +94,15 @@ class MainWindow(QMainWindow):
         new_subscriber_action.triggered.connect(
             lambda: SubscriberWindow.spawn(self, self._node, self._active_data_type_detector))
 
+        new_plotter_action = QAction(get_icon('area-chart'), '&Plotter', self)
+        new_plotter_action.setShortcut(QKeySequence('Ctrl+Shift+P'))
+        new_plotter_action.setStatusTip('Open new graph plotter window')
+        new_plotter_action.triggered.connect(self._plotter_manager.spawn_plotter)
+
         tools_menu = self.menuBar().addMenu('&Tools')
         tools_menu.addAction(show_console_action)
         tools_menu.addAction(new_subscriber_action)
+        tools_menu.addAction(new_plotter_action)
 
         self.statusBar().show()
 
@@ -334,25 +344,22 @@ class MainWindow(QMainWindow):
             logger.error('Node spin error: %r', ex, exc_info=True)
 
     def closeEvent(self, qcloseevent):
+        self._plotter_manager.close()
         self._console_manager.close()
         self._active_data_type_detector.close()
         super(MainWindow, self).closeEvent(qcloseevent)
 
 
 def main():
-    app = QApplication(sys.argv)
+    # Start method is configured globally. Using 'spawn' ensures full compatibility with Windoze.
+    multiprocessing.set_start_method('spawn')
 
-    # noinspection PyBroadException
-    try:
-        app_icon = QIcon(os.path.join(os.path.dirname(__file__), 'icon.png'))
-    except Exception:
-        logger.error('Could not load icon', exc_info=True)
-        app_icon = QIcon()
+    app = QApplication(sys.argv)
 
     while True:
         # Asking the user to specify which interface to work with
         try:
-            iface, iface_kwargs = run_iface_config_window(app_icon)
+            iface, iface_kwargs = run_iface_config_window(get_app_icon())
             if not iface:
                 exit(0)
         except Exception as ex:
@@ -374,11 +381,12 @@ def main():
             # Making sure the interface is alright
             node.spin(0.1)
         except Exception as ex:
+            logger.error('UAVCAN node init failed', exc_info=True)
             show_error('Fatal error', 'Could not initialize UAVCAN node', ex)
         else:
             break
 
-    window = MainWindow(app_icon, node, iface)
+    window = MainWindow(node, iface)
     window.show()
 
     exit_code = app.exec_()
