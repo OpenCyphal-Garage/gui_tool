@@ -16,6 +16,8 @@ import time
 
 assert sys.version[0] == '3'
 
+# TODO: add rotating file logger
+# TODO: add a startup option that enables logging of DEBUG log entries
 logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s %(name)-25s %(message)s')
 
@@ -28,7 +30,7 @@ for path in ('pyqtgraph', 'pyuavcan'):
 import uavcan
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
-from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import QTimer, Qt
 
 from iface_configurator import run_iface_config_window
