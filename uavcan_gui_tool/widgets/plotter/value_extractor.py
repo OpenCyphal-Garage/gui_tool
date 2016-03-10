@@ -7,7 +7,14 @@
 #
 
 
+EXPRESSION_VARIABLE_FOR_MESSAGE = 'msg'
+EXPRESSION_VARIABLE_FOR_SRC_NODE_ID = 'src_node_id'
+
+
 class Expression:
+    class EvaluationError(Exception):
+        pass
+
     def __init__(self, source=None):
         self._source = None
         self._compiled = None
@@ -24,24 +31,10 @@ class Expression:
 
     # noinspection PyShadowingBuiltins
     def evaluate(self, **locals):
-        return eval(self._compiled, globals(), locals)
-
-
-class NodeIDFilter:
-    def __init__(self, node_id):
-        self.node_id = node_id
-
-    def match(self, tr):
-        return tr.source_node_id == self.node_id
-
-
-class FieldFilter:
-    def __init__(self, target_field, expression):
-        self.target_field = target_field
-        self.expression = expression
-
-    def match(self, tr):
-        return self.expression.evaluate(msg=tr.message)
+        try:
+            return eval(self._compiled, globals(), locals)
+        except Exception as ex:
+            raise self.EvaluationError('Failed to evaluate expression: %s' % ex) from ex
 
 
 class ExtractedValue:
@@ -56,20 +49,25 @@ class ExtractedValue:
 
 
 class Extractor:
-    def __init__(self, data_type_name, expression, filters, color):
+    def __init__(self, data_type_name, extraction_expression, filter_expressions, color):
         self.data_type_name = data_type_name
-        self.expression = expression
-        self.filters = filters
+        self.extraction_expression = extraction_expression
+        self.filter_expressions = filter_expressions
         self.color = color
 
     def try_extract(self, tr):
         if tr.data_type_name != self.data_type_name:
             return
 
-        for fil in self.filters:
-            if not fil.match(tr):
+        evaluation_kwargs = {
+            EXPRESSION_VARIABLE_FOR_MESSAGE: tr.message,
+            EXPRESSION_VARIABLE_FOR_SRC_NODE_ID: tr.source_node_id,
+        }
+
+        for exp in self.filter_expressions:
+            if not exp.evaluate(**evaluation_kwargs):
                 return
 
-        value = self.expression.evaluate(msg=tr.message)
+        value = self.extraction_expression.evaluate(**evaluation_kwargs)
 
         return ExtractedValue(value, tr.ts_mono)

@@ -9,8 +9,9 @@
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QColor
-from .. import get_app_icon
-from .value_extractor import Extractor, Expression, FieldFilter, NodeIDFilter
+from .. import get_app_icon, make_icon_button
+from .value_extractor import Extractor, Expression
+from .value_extractor_views import NewValueExtractorWindow
 
 
 class PlotterWindow(QMainWindow):
@@ -19,6 +20,8 @@ class PlotterWindow(QMainWindow):
         self.setWindowTitle('UAVCAN Plotter')
         self.setWindowIcon(get_app_icon())
 
+        self._active_data_types = set()
+
         self._get_transfer = get_transfer_callback
 
         self._update_timer = QTimer(self)
@@ -26,13 +29,21 @@ class PlotterWindow(QMainWindow):
         self._update_timer.timeout.connect(self._update)
         self._update_timer.start(50)
 
-        self._demo_extractor = Extractor('uavcan.protocol.NodeStatus', Expression('msg.health == msg.HEALTH_OK'),
-                                         [NodeIDFilter(125)], QColor('#ffffff'))
+        self.setCentralWidget(
+            make_icon_button('check', 'Demo', self,
+                             on_clicked=lambda: NewValueExtractorWindow(self, self._active_data_types).show()))
+
+        self._demo_extractor = Extractor('uavcan.protocol.NodeStatus',
+                                         Expression('msg.health == msg.HEALTH_OK'),
+                                         [Expression('src_node_id == 125')],
+                                         QColor('#ffffff'))
 
     def _update(self):
         while True:
             tr = self._get_transfer()
-            if tr:
-                extracted = self._demo_extractor.try_extract(tr)
-                if extracted:
-                    print(extracted)
+            if not tr:
+                break
+            self._active_data_types.add(tr.data_type_name)
+            extracted = self._demo_extractor.try_extract(tr)
+            if extracted:
+                print(extracted)
