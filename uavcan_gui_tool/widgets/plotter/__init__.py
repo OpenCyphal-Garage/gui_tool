@@ -70,7 +70,7 @@ def _process_entry_point(channel):
     exit_check_timer.timeout.connect(exit_if_should)
     exit_check_timer.start(2000)
 
-    def get_message():
+    def get_transfer():
         received, obj = channel.receive_nonblocking()
         if received:
             if obj == IPC_COMMAND_STOP:
@@ -79,22 +79,51 @@ def _process_entry_point(channel):
             else:
                 return obj
 
-    win = PlotterWindow(get_message)
+    win = PlotterWindow(get_transfer)
     win.show()
 
     logger.info('Plotter process %r initialized successfully, now starting the event loop', os.getpid())
     exit(app.exec_())
 
 
+class CompactMessage:
+    """
+    Transfer and message objects from Pyuavcan cannot be exchanged between processes,
+    so we build this minimal representation that is just enough to mimic a Pyuavcan message object.
+    """
+    def __init__(self, uavcan_data_type_name):
+        self._uavcan_data_type_name = uavcan_data_type_name
+        self._fields = {}
+
+    def __repr__(self):
+        return '%s(%r)' % (self._uavcan_data_type_name, self._fields)
+
+    def _add_field(self, name, value):
+        self._fields[name] = value
+
+    def __getattr__(self, item):
+        if item not in ('_fields', '_uavcan_data_type_name'):
+            try:
+                return self._fields[item]
+            except KeyError:
+                pass
+            try:
+                return getattr(uavcan.TYPENAMES[self._uavcan_data_type_name](), item)
+            except KeyError:
+                pass
+        raise AttributeError(item)
+
+
+# noinspection PyProtectedMember
 def _extract_struct_fields(m):
     if isinstance(m, uavcan.transport.CompoundValue):
-        out = {}
+        out = CompactMessage(uavcan.get_uavcan_data_type(m).full_name)
         for field_name, field in uavcan.get_fields(m).items():
             if uavcan.is_union(m) and uavcan.get_active_union_field(m) != field_name:
                 continue
             val = _extract_struct_fields(field)
             if val is not None:
-                out[field_name] = val
+                out._add_field(field_name, val)
         return out
     elif isinstance(m, uavcan.transport.ArrayValue):
         # cannot say I'm breaking the rules
@@ -115,9 +144,8 @@ class MessageTransfer:
     def __init__(self, tr):
         self.source_node_id = tr.source_node_id
         self.ts_mono = tr.ts_monotonic
-        self.ts_real = tr.ts_real
         self.data_type_name = uavcan.get_uavcan_data_type(tr.payload).full_name
-        self.fields = _extract_struct_fields(tr.payload)
+        self.message = _extract_struct_fields(tr.payload)
 
 
 class PlotterManager:
