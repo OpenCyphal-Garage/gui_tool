@@ -7,9 +7,9 @@
 #
 
 import uavcan
-from PyQt5.QtWidgets import QDialog, QLabel, QHBoxLayout, QGroupBox, QVBoxLayout, QLineEdit, QSpinBox, \
-    QColorDialog, QComboBox, QCompleter, QCheckBox
-from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QHBoxLayout, QGroupBox, QVBoxLayout, QLineEdit, QSpinBox, \
+    QColorDialog, QComboBox, QCompleter, QCheckBox, QApplication
+from PyQt5.QtGui import QColor, QPalette, QFontMetrics
 from PyQt5.QtCore import Qt, QStringListModel
 from .. import make_icon_button, get_monospace_font, CommitableComboBoxWithHistory, show_error
 from active_data_type_detector import ActiveDataTypeDetector
@@ -27,6 +27,9 @@ def _make_expression_completer(owner, data_type):
     model = QStringListModel()
     comp = QCompleter(owner)
     comp.setCaseSensitivity(Qt.CaseSensitive)
+
+    if isinstance(data_type, str):
+        data_type = uavcan.TYPENAMES[data_type]
 
     # TODO: implement proper completion, requires Python lexer
     # TODO: IPython/Jupyter solves the same task splendidly, might make sense to take a closer look at their code
@@ -57,12 +60,22 @@ def _make_expression_completer(owner, data_type):
     return comp
 
 
-def _set_button_background(button, color):
-    pal = button.palette()
-    pal.setColor(QPalette.Button, QColor(color))
-    button.setAutoFillBackground(True)
-    button.setPalette(pal)
-    button.update()
+def _set_color(widget, role, color):
+    pal = widget.palette()
+    pal.setColor(role, QColor(color))
+    widget.setAutoFillBackground(True)
+    widget.setPalette(pal)
+    widget.update()
+
+
+def _show_color_dialog(current_color, parent):
+    dialog = QColorDialog()
+    for idx, color in enumerate(DEFAULT_COLORS):
+        dialog.setCustomColor(idx, color)
+
+    current_color = dialog.getColor(current_color, parent, 'Select line color')
+    if current_color.isValid():
+        return current_color
 
 
 class DefaultColorRotator:
@@ -133,7 +146,7 @@ class NewValueExtractorWindow(QDialog):
         self._select_color_button = make_icon_button('paint-brush', 'Select line color', self,
                                                      on_clicked=self._select_color)
         self._select_color_button.setFlat(True)
-        _set_button_background(self._select_color_button, self._selected_color)
+        _set_color(self._select_color_button, QPalette.Button, self._selected_color)
 
         # Buttons
         self._ok_button = make_icon_button('check', 'Create new extractor with these settings', self,
@@ -254,13 +267,10 @@ class NewValueExtractorWindow(QDialog):
             _make_expression_completer(self._filter_expression_box, data_type))
 
     def _select_color(self):
-        dialog = QColorDialog()
-        for idx, color in enumerate(DEFAULT_COLORS):
-            dialog.setCustomColor(idx, color)
-
-        self._selected_color = dialog.getColor(self._selected_color, self, 'Select line color')
-        if self._selected_color.isValid():
-            _set_button_background(self._select_color_button, self._selected_color)
+        col = _show_color_dialog(self._selected_color, self)
+        if col:
+            self._selected_color = col
+            _set_color(self._select_color_button, QPalette.Button, self._selected_color)
 
     def _update_data_type_list(self):
         if self._show_all_types_button.isChecked():
@@ -269,3 +279,69 @@ class NewValueExtractorWindow(QDialog):
             items = list(sorted(self._active_data_types))
         self._type_selector.clear()
         self._type_selector.addItems(items)
+
+
+class ExtractorWidget(QWidget):
+    def __init__(self, parent, model):
+        super(ExtractorWidget, self).__init__(parent)
+
+        self.on_remove = lambda: None
+
+        self._model = model
+
+        self._delete_button = make_icon_button('trash-o', 'Remove this extractor', self, on_clicked=self._do_remove)
+
+        self._color_button = make_icon_button('paint-brush', 'Change plot color', self, on_clicked=self._change_color)
+        self._color_button.setFlat(True)
+        _set_color(self._color_button, QPalette.Button, model.color)
+
+        self._extraction_expression_box = QLineEdit(self)
+        self._extraction_expression_box.setToolTip('Extraction expression')
+        self._extraction_expression_box.setFont(get_monospace_font())
+        self._extraction_expression_box.setText(model.extraction_expression.source)
+        self._extraction_expression_box.textChanged.connect(self._on_extraction_expression_changed)
+        self._extraction_expression_box.setCompleter(
+            _make_expression_completer(self._extraction_expression_box, model.data_type_name))
+
+        def box(text, tool_tip):
+            w = QLineEdit(self)
+            w.setReadOnly(True)
+            w.setFont(get_monospace_font())
+            w.setText(str(text))
+            w.setToolTip(tool_tip)
+            fm = QFontMetrics(w.font())
+            magic_number = 10
+            text_size = fm.size(0, w.text())
+            w.setMinimumWidth(text_size.width() + magic_number)
+            return w
+
+        layout = QHBoxLayout(self)
+        layout.addWidget(self._delete_button)
+        layout.addWidget(self._color_button)
+        layout.addWidget(box(model.data_type_name, 'Message type name'))
+        layout.addWidget(box(' AND '.join([x.source for x in model.filter_expressions]), 'Filter expressions'))
+        layout.addWidget(self._extraction_expression_box, 1)
+        self.setLayout(layout)
+
+    def _on_extraction_expression_changed(self):
+        text = self._extraction_expression_box.text()
+        try:
+            expr = Expression(text)
+            self._extraction_expression_box.setPalette(QApplication.palette())
+        except Exception:
+            _set_color(self._extraction_expression_box, QPalette.Base, Qt.red)
+            return
+
+        self._model.extraction_expression = expr
+
+    def _change_color(self):
+        col = _show_color_dialog(self._model.color, self)
+        if col:
+            self._model.color = col
+            _set_color(self._color_button, QPalette.Button, self._model.color)
+
+    def _do_remove(self):
+        self.on_remove()
+        self.setParent(None)
+        self.close()
+        self.deleteLater()

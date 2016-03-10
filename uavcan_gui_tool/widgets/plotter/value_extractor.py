@@ -21,6 +21,7 @@ class Expression:
         self.set(source)
 
     def set(self, source):
+        source = source.strip()
         code = compile(str(source), '<custom-expression>', 'eval')  # May throw
         self._source = source
         self._compiled = code

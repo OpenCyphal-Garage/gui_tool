@@ -11,7 +11,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QColor
 from .. import get_app_icon, make_icon_button
 from .value_extractor import Extractor, Expression
-from .value_extractor_views import NewValueExtractorWindow
+from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 
 
 class PlotterWindow(QMainWindow):
@@ -29,14 +29,12 @@ class PlotterWindow(QMainWindow):
         self._update_timer.timeout.connect(self._update)
         self._update_timer.start(50)
 
-        self.setCentralWidget(
-            make_icon_button('check', 'Demo', self,
-                             on_clicked=lambda: NewValueExtractorWindow(self, self._active_data_types).show()))
-
         self._demo_extractor = Extractor('uavcan.protocol.NodeStatus',
                                          Expression('msg.health == msg.HEALTH_OK'),
                                          [Expression('src_node_id == 125')],
                                          QColor('#ffffff'))
+
+        self.setCentralWidget(ExtractorWidget(self, self._demo_extractor))
 
     def _update(self):
         while True:
