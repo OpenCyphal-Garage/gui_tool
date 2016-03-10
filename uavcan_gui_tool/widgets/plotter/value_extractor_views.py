@@ -11,9 +11,10 @@ from PyQt5.QtWidgets import QDialog, QLabel, QHBoxLayout, QGroupBox, QVBoxLayout
     QColorDialog, QComboBox, QCompleter, QCheckBox
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import Qt, QStringListModel
-from .. import make_icon_button, get_monospace_font, CommitableComboBoxWithHistory
+from .. import make_icon_button, get_monospace_font, CommitableComboBoxWithHistory, show_error
 from active_data_type_detector import ActiveDataTypeDetector
-from .value_extractor import EXPRESSION_VARIABLE_FOR_MESSAGE
+from .value_extractor import EXPRESSION_VARIABLE_FOR_MESSAGE, EXPRESSION_VARIABLE_FOR_SRC_NODE_ID, Expression, \
+    Extractor
 
 
 DEFAULT_COLORS = [
@@ -86,6 +87,7 @@ class NewValueExtractorWindow(QDialog):
         self.setModal(True)
 
         self._active_data_types = active_data_types
+        self.on_done = print
 
         # Message type selection box
         self._type_selector = CommitableComboBoxWithHistory(self)
@@ -185,7 +187,50 @@ class NewValueExtractorWindow(QDialog):
         self._on_type_changed()
 
     def _on_ok(self):
-        pass
+        # Data type name
+        data_type_name = self._type_selector.currentText()
+        try:
+            data_type = uavcan.TYPENAMES[self._type_selector.currentText()]
+            if data_type.kind != data_type.KIND_MESSAGE:
+                show_error('Invalid configuration', 'Selected data type is not a message type', data_type_name, self)
+                return
+        except KeyError:
+            show_error('Invalid configuration', 'Selected data type does not exist', data_type_name, self)
+            return
+
+        # Extraction expression
+        try:
+            extraction_expression = Expression(self._extraction_expression_box.text())
+        except Exception as ex:
+            show_error('Invalid configuration', 'Extraction expression is invalid', ex, self)
+            return
+
+        # Filter expressions
+        filter_expressions = []
+        if self._node_id_filter_checkbox.isChecked():
+            node_id = self._node_id_filter_spinbox.value()
+            filter_expressions.append(
+                Expression('%s == %d' % (EXPRESSION_VARIABLE_FOR_SRC_NODE_ID, node_id)))
+
+        if self._filter_expression_box.text().strip():
+            try:
+                fe = Expression(self._filter_expression_box.text())
+            except Exception as ex:
+                show_error('Invalid configuration', 'Filter expression is invalid', ex, self)
+                return
+            filter_expressions.append(fe)
+
+        # Visualization
+        color = self._selected_color
+
+        # Finally!
+        extractor = Extractor(data_type_name, extraction_expression, filter_expressions, color)
+        self.on_done(extractor)
+
+        # Suicide
+        self.setParent(None)
+        self.deleteLater()
+        self.close()
 
     def _on_type_changed(self):
         try:

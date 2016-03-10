@@ -55,6 +55,10 @@ class Extractor:
         self.filter_expressions = filter_expressions
         self.color = color
 
+    def __repr__(self):
+        return '%r %r %r' % (self.data_type_name, self.extraction_expression.source,
+                             [x.source for x in self.filter_expressions])
+
     def try_extract(self, tr):
         if tr.data_type_name != self.data_type_name:
             return
