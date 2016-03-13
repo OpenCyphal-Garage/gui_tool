@@ -7,11 +7,10 @@
 #
 
 import logging
-import numpy
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSpinBox, QComboBox, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSpinBox, QComboBox, QLabel, QCheckBox, QDoubleSpinBox
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
-from pyqtgraph import PlotWidget, mkPen, mkBrush
+from pyqtgraph import PlotWidget, mkPen
 from .abstract_plot_area import AbstractPlotArea
 
 
@@ -81,6 +80,19 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot_mode_box.setCurrentIndex(0)
         self._plot_mode_box.currentTextChanged.connect(self.clear)
 
+        self._lock_aspect_ratio_checkbox = QCheckBox('Lock aspect ratio:', self)
+        self._lock_aspect_ratio_checkbox.setChecked(True)
+
+        self._aspect_ratio_spinbox = QDoubleSpinBox(self)
+        self._aspect_ratio_spinbox.setMinimum(1e-6)
+        self._aspect_ratio_spinbox.setMaximum(1e+6)
+        self._aspect_ratio_spinbox.setDecimals(6)
+        self._aspect_ratio_spinbox.setValue(1)
+        self._aspect_ratio_spinbox.setSingleStep(0.1)
+
+        self._lock_aspect_ratio_checkbox.clicked.connect(self._update_aspect_ratio)
+        self._aspect_ratio_spinbox.valueChanged.connect(self._update_aspect_ratio)
+
         self._plot = PlotWidget(self, background=QColor(Qt.black))
         self._plot.showButtons()
         self._plot.enableAutoRange()
@@ -94,14 +106,28 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         controls_layout.addWidget(self._max_data_points_spinbox)
         controls_layout.addWidget(QLabel('Plot style:', self))
         controls_layout.addWidget(self._plot_mode_box)
+        controls_layout.addWidget(self._lock_aspect_ratio_checkbox)
+        controls_layout.addWidget(self._aspect_ratio_spinbox)
         controls_layout.addStretch(1)
 
         layout.addLayout(controls_layout)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
+        # Initialization
+        self._update_aspect_ratio()
+        self._update_max_data_points()
+
     def _update_max_data_points(self):
         self._max_data_points = self._max_data_points_spinbox.value()
+
+    def _update_aspect_ratio(self):
+        if self._lock_aspect_ratio_checkbox.isChecked():
+            self._aspect_ratio_spinbox.setEnabled(True)
+            self._plot.setAspectLocked(True, ratio=self._aspect_ratio_spinbox.value())
+        else:
+            self._aspect_ratio_spinbox.setEnabled(False)
+            self._plot.setAspectLocked(False)
 
     def _forge_curve(self, color):
         logger.info('Adding new curve')
