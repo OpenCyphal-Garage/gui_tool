@@ -81,7 +81,7 @@ class PlotterWindow(QMainWindow):
         # Window stuff
         #
         self.statusBar().showMessage('Use the "New Plot" menu to add plots')
-        self.setCentralWidget(QWidget(self))
+        self.setCentralWidget(None)
 
         self.resize(800, 600)
 
@@ -94,9 +94,9 @@ class PlotterWindow(QMainWindow):
         self._plot_containers.append(plc)
 
         docks = [
-            Qt.TopDockWidgetArea,
-            Qt.BottomDockWidgetArea,
             Qt.LeftDockWidgetArea,
+            Qt.LeftDockWidgetArea,
+            Qt.RightDockWidgetArea,
             Qt.RightDockWidgetArea,
         ]
         dock_to = docks[(len(self._plot_containers) - 1) % len(docks)]
