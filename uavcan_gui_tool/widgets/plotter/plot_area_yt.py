@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import PlotWidget, mkPen
-from .abstract_plot_area import AbstractPlotArea
+from .abstract_plot_area import AbstractPlotArea, add_crosshair
 from .. import make_icon_button
 
 
@@ -78,6 +78,21 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         layout.addLayout(controls_layout)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        # Crosshair
+        def render_measurements(cur, ref):
+            text = 't %.6f sec,  y %.6f' % cur
+            if ref is None:
+                return text
+            dt = cur[0] - ref[0]
+            dy = cur[1] - ref[1]
+            if abs(dt) > 1e-12:
+                freq = '%.6f' % abs(1 / dt)
+            else:
+                freq = 'inf'
+            return text + ';' + ' ' * 4 + 'dt %.6f sec,  freq %s Hz,  dy %.6f' % (dt, freq, dy)
+
+        add_crosshair(self._plot, render_measurements)
 
     def _forge_curves(self, how_many, base_color):
         if how_many > 1 and self._legend is None:

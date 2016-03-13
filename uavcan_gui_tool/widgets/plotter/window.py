@@ -58,6 +58,7 @@ class PlotterWindow(QMainWindow):
         central_widget.setLayout(layout)
 
         self.setCentralWidget(central_widget)
+        self.statusBar().show()
 
     def _update(self):
         while True:

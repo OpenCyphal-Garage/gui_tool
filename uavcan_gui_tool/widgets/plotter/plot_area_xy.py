@@ -6,12 +6,13 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import math
 import logging
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSpinBox, QComboBox, QLabel, QCheckBox, QDoubleSpinBox
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import PlotWidget, mkPen
-from .abstract_plot_area import AbstractPlotArea
+from .abstract_plot_area import AbstractPlotArea, add_crosshair
 
 
 logger = logging.getLogger(__name__)
@@ -84,9 +85,9 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._lock_aspect_ratio_checkbox.setChecked(True)
 
         self._aspect_ratio_spinbox = QDoubleSpinBox(self)
-        self._aspect_ratio_spinbox.setMinimum(1e-6)
-        self._aspect_ratio_spinbox.setMaximum(1e+6)
-        self._aspect_ratio_spinbox.setDecimals(6)
+        self._aspect_ratio_spinbox.setMinimum(1e-3)
+        self._aspect_ratio_spinbox.setMaximum(1e+3)
+        self._aspect_ratio_spinbox.setDecimals(3)
         self._aspect_ratio_spinbox.setValue(1)
         self._aspect_ratio_spinbox.setSingleStep(0.1)
 
@@ -113,6 +114,18 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         layout.addLayout(controls_layout)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        # Crosshair
+        def render_measurements(cur, ref):
+            text = 'x %.6f,  y %.6f' % cur
+            if ref is None:
+                return text
+            dx = cur[0] - ref[0]
+            dy = cur[1] - ref[1]
+            dist = math.sqrt(dx ** 2 + dy ** 2)
+            return text + ';' + ' ' * 4 + 'dx %.6f,  dy %.6f,  dist %.6f' % (dx, dy, dist)
+
+        add_crosshair(self._plot, render_measurements)
 
         # Initialization
         self._update_aspect_ratio()
