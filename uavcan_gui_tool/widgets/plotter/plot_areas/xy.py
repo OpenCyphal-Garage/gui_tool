@@ -68,8 +68,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
 
         self._extractor_associations = {}       # Extractor : plot
 
-        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self.reset,
-                                              text='Clear')
+        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self.reset)
 
         self._max_data_points = 100000
 
@@ -108,13 +107,13 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
 
         controls_layout = QHBoxLayout(self)
         controls_layout.addWidget(self._clear_button)
-        controls_layout.addWidget(QLabel('Data points per plot:', self))
+        controls_layout.addStretch(1)
+        controls_layout.addWidget(QLabel('Points per plot:', self))
         controls_layout.addWidget(self._max_data_points_spinbox)
-        controls_layout.addWidget(QLabel('Plot style:', self))
+        controls_layout.addWidget(QLabel('Style:', self))
         controls_layout.addWidget(self._plot_mode_box)
         controls_layout.addWidget(self._lock_aspect_ratio_checkbox)
         controls_layout.addWidget(self._aspect_ratio_spinbox)
-        controls_layout.addStretch(1)
 
         layout.addLayout(controls_layout)
         layout.setContentsMargins(0, 0, 0, 0)

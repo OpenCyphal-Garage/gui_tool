@@ -60,10 +60,9 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
 
         self._autoscroll_checkbox = make_icon_button('angle-double-right',
                                                      'Scroll the plot automatically as new data arrives', self,
-                                                     checkable=True, checked=True, text='Autoscroll')
+                                                     checkable=True, checked=True)
 
-        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self._do_clear,
-                                              text='Clear')
+        self._clear_button = make_icon_button('eraser', 'Clear all curves', self, on_clicked=self._do_clear)
 
         self._plot = PlotWidget(self, background=QColor(Qt.black))
         self._plot.showButtons()
@@ -73,13 +72,16 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         # noinspection PyArgumentList
         self._plot.setRange(xRange=(0, self.INITIAL_X_RANGE), padding=0)
 
-        layout = QVBoxLayout(self)
-        layout.addWidget(self._plot, 1)
-        controls_layout = QHBoxLayout(self)
+        layout = QHBoxLayout(self)
+
+        controls_layout = QVBoxLayout(self)
         controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._autoscroll_checkbox)
         controls_layout.addStretch(1)
         layout.addLayout(controls_layout)
+
+        layout.addWidget(self._plot, 1)
+
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
