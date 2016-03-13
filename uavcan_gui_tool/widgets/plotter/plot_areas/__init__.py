@@ -9,7 +9,7 @@
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import mkPen, InfiniteLine
-from .. import flash
+from ... import flash
 
 
 class AbstractPlotArea:
@@ -58,3 +58,12 @@ def add_crosshair(plot, render_measurements, color=Qt.gray):
 
     plot.scene().sigMouseMoved.connect(update)
     plot.scene().sigMouseClicked.connect(set_reference)
+
+
+from .yt import PlotAreaYTWidget
+from .xy import PlotAreaXYWidget
+
+PLOT_AREAS = {
+    'Y-T plot': PlotAreaYTWidget,
+    'X-Y plot': PlotAreaXYWidget
+}

@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSpinBox, QComboB
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import PlotWidget, mkPen
-from .abstract_plot_area import AbstractPlotArea, add_crosshair
+from . import AbstractPlotArea, add_crosshair
 
 
 logger = logging.getLogger(__name__)

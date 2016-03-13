@@ -13,8 +13,7 @@ from PyQt5.QtGui import QColor
 from .. import get_app_icon, make_icon_button
 from .value_extractor import Extractor, Expression
 from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
-from .plot_area_yt import PlotAreaYTWidget
-from .plot_area_xy import PlotAreaXYWidget
+from .plot_areas import PLOT_AREAS
 
 
 class PlotterWindow(QMainWindow):
@@ -37,8 +36,8 @@ class PlotterWindow(QMainWindow):
 
         self._base_time = time.monotonic()
 
-        self._plot_yt = PlotAreaYTWidget(self)
-        self._plot_xy = PlotAreaXYWidget(self)
+        self._plot_yt = PLOT_AREAS['Y-T plot'](self)
+        self._plot_xy = PLOT_AREAS['X-Y plot'](self)
 
         self._demo_extractor = Extractor('uavcan.equipment.gnss.Fix',
                                          #Expression('msg.longitude_deg_1e8 / 1e8'),
