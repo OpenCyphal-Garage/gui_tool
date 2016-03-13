@@ -24,18 +24,16 @@ class CurveContainer:
 
     def __init__(self, plot):
         self.plot = plot
-        self.x = numpy.array([])
-        self.y = numpy.array([])
+        self.x = []
+        self.y = []
 
     def add_point(self, x, y):
-        # TODO: use plain lists instead of numpy array
-        if len(self.x) >= self.MAX_DATA_POINTS:
-            self.x = self.x[-self.MAX_DATA_POINTS:]
-            self.y = self.y[-self.MAX_DATA_POINTS:]
+        while len(self.x) >= self.MAX_DATA_POINTS:
+            self.x.pop(0)
+            self.y.pop(0)
         assert len(self.x) == len(self.y)
-
-        self.x = numpy.append(self.x, x)
-        self.y = numpy.append(self.y, y)
+        self.x.append(x)
+        self.y.append(y)
 
     def update(self):
         self.plot.setData(self.x, self.y)
