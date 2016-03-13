@@ -38,17 +38,6 @@ class Expression:
             raise self.EvaluationError('Failed to evaluate expression: %s' % ex) from ex
 
 
-class ExtractedValue:
-    def __init__(self, value, ts_mono):
-        self.value = value
-        self.ts_mono = ts_mono
-
-    def __repr__(self):
-        return '%.6f %r' % (self.ts_mono, self.value)
-
-    __str__ = __repr__
-
-
 class Extractor:
     def __init__(self, data_type_name, extraction_expression, filter_expressions, color):
         self.data_type_name = data_type_name
@@ -76,7 +65,7 @@ class Extractor:
 
         value = self.extraction_expression.evaluate(**evaluation_kwargs)
 
-        return ExtractedValue(value, tr.ts_mono)
+        return value
 
     def register_error(self):
         self._error_count += 1
