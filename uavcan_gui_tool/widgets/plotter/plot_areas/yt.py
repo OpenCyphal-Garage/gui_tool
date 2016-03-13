@@ -62,6 +62,9 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
                                                      'Scroll the plot automatically as new data arrives', self,
                                                      checkable=True, checked=True, text='Autoscroll')
 
+        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self._do_clear,
+                                              text='Clear')
+
         self._plot = PlotWidget(self, background=QColor(Qt.black))
         self._plot.showButtons()
         self._plot.enableAutoRange()
@@ -73,6 +76,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         layout = QVBoxLayout(self)
         layout.addWidget(self._plot, 1)
         controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(self._autoscroll_checkbox)
         controls_layout.addStretch(1)
         layout.addLayout(controls_layout)
@@ -153,7 +157,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
             self._legend.scene().removeItem(self._legend)
             self._legend = None
 
-    def clear(self):
+    def _do_clear(self):
         for k in list(self._extractor_associations.keys()):
             self.remove_curves_provided_by_extractor(k)
 

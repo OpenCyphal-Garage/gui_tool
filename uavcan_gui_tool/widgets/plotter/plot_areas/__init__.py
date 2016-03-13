@@ -19,9 +19,6 @@ class AbstractPlotArea:
     def remove_curves_provided_by_extractor(self, extractor):
         pass
 
-    def clear(self):
-        pass
-
     def update(self):
         pass
 

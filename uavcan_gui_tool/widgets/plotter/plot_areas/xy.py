@@ -13,6 +13,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import PlotWidget, mkPen
 from . import AbstractPlotArea, add_crosshair
+from ... import make_icon_button
 
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,9 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
 
         self._extractor_associations = {}       # Extractor : plot
 
+        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self._do_clear,
+                                              text='Clear')
+
         self._max_data_points = 100000
 
         self._max_data_points_spinbox = QSpinBox(self)
@@ -79,7 +83,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot_mode_box.setEditable(False)
         self._plot_mode_box.addItems(['Line', 'Scatter'])
         self._plot_mode_box.setCurrentIndex(0)
-        self._plot_mode_box.currentTextChanged.connect(self.clear)
+        self._plot_mode_box.currentTextChanged.connect(self._do_clear)
 
         self._lock_aspect_ratio_checkbox = QCheckBox('Lock aspect ratio:', self)
         self._lock_aspect_ratio_checkbox.setChecked(True)
@@ -103,6 +107,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         layout.addWidget(self._plot, 1)
 
         controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(self._clear_button)
         controls_layout.addWidget(QLabel('Data points per plot:', self))
         controls_layout.addWidget(self._max_data_points_spinbox)
         controls_layout.addWidget(QLabel('Plot style:', self))
@@ -171,7 +176,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot.removeItem(self._extractor_associations[extractor].plot)
         del self._extractor_associations[extractor]
 
-    def clear(self):
+    def _do_clear(self):
         for k in list(self._extractor_associations.keys()):
             self.remove_curves_provided_by_extractor(k)
 
