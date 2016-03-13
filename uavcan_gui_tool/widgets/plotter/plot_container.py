@@ -28,7 +28,7 @@ class PlotContainerWidget(QDockWidget):
         self._active_data_types = active_data_types
         self._extractors = []
 
-        self._new_extractor_button = make_icon_button('plus', 'Add new plot', self, text='New extractor...',
+        self._new_extractor_button = make_icon_button('plus', 'Add new value extractor', self,
                                                       on_clicked=self._do_new_extractor)
 
         widget = QWidget(self)
@@ -36,15 +36,20 @@ class PlotContainerWidget(QDockWidget):
         layout = QVBoxLayout(widget)
         layout.addWidget(self._plot_area, 1)
 
-        self._extractors_layout = QVBoxLayout(widget)
-        self._extractors_layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(self._extractors_layout)
+        footer_layout = QHBoxLayout(self)
 
-        controls_layout = QHBoxLayout(widget)
+        controls_layout = QVBoxLayout(widget)
         controls_layout.addWidget(self._new_extractor_button)
         controls_layout.addStretch(1)
         controls_layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(controls_layout)
+        footer_layout.addLayout(controls_layout)
+
+        self._extractors_layout = QVBoxLayout(widget)
+        self._extractors_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.addLayout(self._extractors_layout)
+
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(footer_layout)
         widget.setLayout(layout)
 
         self.setWidget(widget)
