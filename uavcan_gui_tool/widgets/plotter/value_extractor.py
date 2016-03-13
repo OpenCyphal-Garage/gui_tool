@@ -55,6 +55,7 @@ class Extractor:
         self.extraction_expression = extraction_expression
         self.filter_expressions = filter_expressions
         self.color = color
+        self._error_count = 0
 
     def __repr__(self):
         return '%r %r %r' % (self.data_type_name, self.extraction_expression.source,
@@ -76,3 +77,13 @@ class Extractor:
         value = self.extraction_expression.evaluate(**evaluation_kwargs)
 
         return ExtractedValue(value, tr.ts_mono)
+
+    def register_error(self):
+        self._error_count += 1
+
+    def reset_error_count(self):
+        self._error_count = 0
+
+    @property
+    def error_count(self):
+        return self._error_count

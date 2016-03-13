@@ -10,7 +10,7 @@ import uavcan
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QHBoxLayout, QGroupBox, QVBoxLayout, QLineEdit, QSpinBox, \
     QColorDialog, QComboBox, QCompleter, QCheckBox, QApplication
 from PyQt5.QtGui import QColor, QPalette, QFontMetrics
-from PyQt5.QtCore import Qt, QStringListModel
+from PyQt5.QtCore import Qt, QStringListModel, QTimer
 from .. import make_icon_button, get_monospace_font, CommitableComboBoxWithHistory, show_error
 from active_data_type_detector import ActiveDataTypeDetector
 from .value_extractor import EXPRESSION_VARIABLE_FOR_MESSAGE, EXPRESSION_VARIABLE_FOR_SRC_NODE_ID, Expression, \
@@ -289,6 +289,11 @@ class ExtractorWidget(QWidget):
 
         self._model = model
 
+        self._update_timer = QTimer(self)
+        self._update_timer.setSingleShot(False)
+        self._update_timer.timeout.connect(self._update)
+        self._update_timer.start(200)
+
         self._delete_button = make_icon_button('trash-o', 'Remove this extractor', self, on_clicked=self._do_remove)
 
         self._color_button = make_icon_button('paint-brush', 'Change plot color', self, on_clicked=self._change_color)
@@ -302,6 +307,10 @@ class ExtractorWidget(QWidget):
         self._extraction_expression_box.textChanged.connect(self._on_extraction_expression_changed)
         self._extraction_expression_box.setCompleter(
             _make_expression_completer(self._extraction_expression_box, model.data_type_name))
+
+        self._error_label = make_icon_button('warning', 'Extraction error count; click to reset', self,
+                                             on_clicked=self._reset_errors)
+        self._reset_errors()
 
         def box(text, tool_tip):
             w = QLineEdit(self)
@@ -321,6 +330,8 @@ class ExtractorWidget(QWidget):
         layout.addWidget(box(model.data_type_name, 'Message type name'))
         layout.addWidget(box(' AND '.join([x.source for x in model.filter_expressions]), 'Filter expressions'))
         layout.addWidget(self._extraction_expression_box, 1)
+        layout.addWidget(self._error_label)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
     def _on_extraction_expression_changed(self):
@@ -340,8 +351,16 @@ class ExtractorWidget(QWidget):
             self._model.color = col
             _set_color(self._color_button, QPalette.Button, self._model.color)
 
+    def _update(self):
+        self._error_label.setText(str(self._model.error_count))
+
+    def _reset_errors(self):
+        self._model.reset_error_count()
+        self._update()
+
     def _do_remove(self):
         self.on_remove()
+        self._update_timer.stop()
         self.setParent(None)
         self.close()
         self.deleteLater()

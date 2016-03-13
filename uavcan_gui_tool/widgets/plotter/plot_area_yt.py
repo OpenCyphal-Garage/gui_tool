@@ -69,6 +69,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         controls_layout.addWidget(self._autoscroll_checkbox)
         controls_layout.addStretch(1)
         layout.addLayout(controls_layout)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
     def _forge_curves(self, how_many, base_color):

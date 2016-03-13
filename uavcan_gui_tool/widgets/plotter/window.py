@@ -43,8 +43,14 @@ class PlotterWindow(QMainWindow):
                                          [Expression('src_node_id == 125')],
                                          QColor('#ff00ff'))
 
+        self._demo_extractor2 = Extractor('uavcan.equipment.gnss.Fix',
+                                          Expression('msg.latitude_deg_1e8 / 1e8'),
+                                          [Expression('src_node_id == 125')],
+                                          QColor('#00ffff'))
+
         layout.addWidget(self._plot_yt)
         layout.addWidget(ExtractorWidget(self, self._demo_extractor))
+        layout.addWidget(ExtractorWidget(self, self._demo_extractor2))
         central_widget.setLayout(layout)
 
         self.setCentralWidget(central_widget)
@@ -57,8 +63,11 @@ class PlotterWindow(QMainWindow):
 
             self._active_data_types.add(tr.data_type_name)
 
-            extracted = self._demo_extractor.try_extract(tr)
-            if extracted:
-                self._plot_yt.add_value(self._demo_extractor, extracted.ts_mono - self._base_time, extracted.value)
+            try:
+                extracted = self._demo_extractor.try_extract(tr)
+                if extracted:
+                    self._plot_yt.add_value(self._demo_extractor, extracted.ts_mono - self._base_time, extracted.value)
+            except Exception:
+                self._demo_extractor.register_error()
 
         self._plot_yt.update()
