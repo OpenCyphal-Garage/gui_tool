@@ -20,6 +20,9 @@ from .value_extractor import EXPRESSION_VARIABLE_FOR_MESSAGE, EXPRESSION_VARIABL
 DEFAULT_COLORS = [
     Qt.red, Qt.green, Qt.blue,                        # RGB - http://ux.stackexchange.com/questions/79561
     Qt.yellow, Qt.cyan, Qt.magenta,                   # Close to RGB
+    Qt.darkRed, Qt.darkGreen, Qt.darkBlue,            # Darker RGB
+    Qt.darkYellow, Qt.darkCyan, Qt.darkMagenta,       # Close to RGB
+    Qt.gray, Qt.darkGray                              # Leftovers
 ]
 
 

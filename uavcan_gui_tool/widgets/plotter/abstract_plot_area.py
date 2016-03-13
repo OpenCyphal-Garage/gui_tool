@@ -8,7 +8,7 @@
 
 
 class AbstractPlotArea:
-    def add_value(self, extractor, x, y):
+    def add_value(self, extractor, timestamp, value):
         pass
 
     def remove_curves_provided_by_extractor(self, extractor):

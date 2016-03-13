@@ -14,6 +14,7 @@ from .. import get_app_icon, make_icon_button
 from .value_extractor import Extractor, Expression
 from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 from .plot_area_yt import PlotAreaYTWidget
+from .plot_area_xy import PlotAreaXYWidget
 
 
 class PlotterWindow(QMainWindow):
@@ -37,19 +38,22 @@ class PlotterWindow(QMainWindow):
         self._base_time = time.monotonic()
 
         self._plot_yt = PlotAreaYTWidget(self)
+        self._plot_xy = PlotAreaXYWidget(self)
 
         self._demo_extractor = Extractor('uavcan.equipment.gnss.Fix',
-                                         Expression('msg.longitude_deg_1e8 / 1e8'),
+                                         #Expression('msg.longitude_deg_1e8 / 1e8'),
+                                         Expression('1, 2, 3, 4, 5, 6, 7, 8, 9'),
                                          [Expression('src_node_id == 125')],
                                          QColor('#ff00ff'))
 
         self._demo_extractor2 = Extractor('uavcan.equipment.gnss.Fix',
-                                          Expression('msg.latitude_deg_1e8 / 1e8'),
+                                          Expression('msg.longitude_deg_1e8 / 1e8, msg.latitude_deg_1e8 / 1e8'),
                                           [Expression('src_node_id == 125')],
                                           QColor('#00ffff'))
 
         layout.addWidget(self._plot_yt)
         layout.addWidget(ExtractorWidget(self, self._demo_extractor))
+        layout.addWidget(self._plot_xy)
         layout.addWidget(ExtractorWidget(self, self._demo_extractor2))
         central_widget.setLayout(layout)
 
@@ -70,4 +74,12 @@ class PlotterWindow(QMainWindow):
             except Exception:
                 self._demo_extractor.register_error()
 
+            try:
+                extracted = self._demo_extractor2.try_extract(tr)
+                if extracted:
+                    self._plot_xy.add_value(self._demo_extractor2, extracted.ts_mono - self._base_time, extracted.value)
+            except Exception:
+                self._demo_extractor2.register_error()
+
         self._plot_yt.update()
+        self._plot_xy.update()

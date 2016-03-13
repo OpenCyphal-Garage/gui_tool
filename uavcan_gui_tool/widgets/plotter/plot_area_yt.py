@@ -7,7 +7,6 @@
 #
 
 import logging
-import numpy
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
@@ -22,7 +21,10 @@ logger = logging.getLogger(__name__)
 class CurveContainer:
     MAX_DATA_POINTS = 200000
 
-    def __init__(self, plot):
+    def __init__(self, plot, base_color, darkening, pen):
+        self.base_color = base_color
+        self.darkening = darkening
+        self.pen = pen
         self.plot = plot
         self.x = []
         self.y = []
@@ -35,13 +37,20 @@ class CurveContainer:
         self.x.append(x)
         self.y.append(y)
 
+    def set_color(self, color):
+        if self.base_color != color:
+            self.base_color = color
+            color = self.base_color.darker(self.darkening)
+            logger.info('Updating color %r --> %r', self.pen.color(), color)
+            self.pen.setColor(color)
+
     def update(self):
-        self.plot.setData(self.x, self.y)
+        self.plot.setData(self.x, self.y, pen=self.pen)
 
 
 class PlotAreaYTWidget(QWidget, AbstractPlotArea):
     INITIAL_X_RANGE = 120
-    MAX_CURVES_PER_EXTRACTOR = 4
+    MAX_CURVES_PER_EXTRACTOR = 9
 
     def __init__(self, parent):
         super(PlotAreaYTWidget, self).__init__(parent)
@@ -71,18 +80,26 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         self.setLayout(layout)
 
     def _forge_curves(self, how_many, base_color):
-        # Adding legend if we have more than 1 plot per extractor
         if how_many > 1 and self._legend is None:
             self._legend = self._plot.addLegend()
 
         out = []
+        darkening_values = [100, 200, 300]
+        dash_patterns = (
+            [],
+            [3, 3],
+            [10, 3]
+        )
         for idx in range(how_many):
             logger.info('Adding new curve')
-            pen = mkPen(base_color, width=1)
-            plot = self._plot.plot(name=str(idx), pen=pen)
-            out.append(CurveContainer(plot))
-            base_color = base_color.darker(300)
-
+            try:
+                darkening = darkening_values[idx % len(darkening_values)]
+                pattern = dash_patterns[int(idx / len(darkening_values)) % len(dash_patterns)]
+                pen = mkPen(color=base_color.darker(darkening), width=1, dash=pattern)
+                plot = self._plot.plot(name=str(idx), pen=pen)
+                out.append(CurveContainer(plot, base_color, darkening, pen))
+            except Exception:
+                logger.error('Could not add curve', exc_info=True)
         return out
 
     def add_value(self, extractor, x, y):
@@ -106,6 +123,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         # Actually plotting
         for idx, curve in enumerate(self._extractor_associations[extractor]):
             curve.add_point(x, float(y[idx]))
+            curve.set_color(extractor.color)
 
         # Updating the rightmost value
         self._max_x = max(self._max_x, x)
@@ -118,6 +136,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
 
         if self._legend is not None:
             self._legend.scene().removeItem(self._legend)
+            self._legend = None
 
     def clear(self):
         for k in list(self._extractor_associations.keys()):
