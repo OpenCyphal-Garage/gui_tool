@@ -243,6 +243,9 @@ class NewValueExtractorWindow(QDialog):
         extractor = Extractor(data_type_name, extraction_expression, filter_expressions, color)
         self.on_done(extractor)
 
+        # Updating dependent states
+        self.default_color_rotator.rotate()
+
         # Suicide
         self.setParent(None)
         self.deleteLater()
