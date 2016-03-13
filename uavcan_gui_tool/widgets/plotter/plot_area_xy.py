@@ -18,9 +18,8 @@ from .abstract_plot_area import AbstractPlotArea
 logger = logging.getLogger(__name__)
 
 
-class CurveContainer:
-    def __init__(self, plot, color):
-        self.pen = mkPen(color=color, width=1)
+class AbstractPlotContainer:
+    def __init__(self, plot):
         self.plot = plot
         self.x = []
         self.y = []
@@ -33,13 +32,33 @@ class CurveContainer:
         self.x.append(x)
         self.y.append(y)
 
-    def set_color(self, color):
-        if self.pen.color() != color:
-            logger.info('Updating color %r --> %r', self.pen.color(), color)
-            self.pen.setColor(color)
-
     def update(self):
-        self.plot.setData(self.x, self.y, pen=self.pen)
+        self.plot.setData(self.x, self.y)
+
+
+class LinePlotContainer(AbstractPlotContainer):
+    def __init__(self, plot, pen):
+        super(LinePlotContainer, self).__init__(plot)
+        self.pen = pen
+
+    def set_color(self, color):
+        self.pen.setColor(color)
+        self.plot.setPen(self.pen)
+
+
+class ScatterPlotContainer(AbstractPlotContainer):
+    def __init__(self, parent, color):
+        self.parent = parent
+        super(ScatterPlotContainer, self).__init__(self._inst(color))
+
+    def _inst(self, color):
+        return self.parent.scatterPlot(symbol='+', size=2, pen=mkPen(color=color, width=1))
+
+    def set_color(self, color):
+        # We have to re-create the plot from scratch, because seems to be impossible to re-color a ScatterPlot
+        # once it has been created. Either it's bug in PyQtGraph, or I'm doing something wrong.
+        self.parent.removeItem(self.plot)
+        self.plot = self._inst(color)
 
 
 class PlotAreaXYWidget(QWidget, AbstractPlotArea):
@@ -84,18 +103,16 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
     def _update_max_data_points(self):
         self._max_data_points = self._max_data_points_spinbox.value()
 
-    def _forge_curve(self, base_color):
+    def _forge_curve(self, color):
         logger.info('Adding new curve')
 
         mode = self._plot_mode_box.currentText().lower()
         if mode == 'line':
-            plot = self._plot.plot()
+            return LinePlotContainer(self._plot.plot(), mkPen(color=color, width=1))
         elif mode == 'scatter':
-            plot = self._plot.scatterPlot(symbol='+', size=3)
+            return ScatterPlotContainer(self._plot, color)
         else:
             raise RuntimeError('Invalid plot mode: %r' % mode)
-
-        return CurveContainer(plot, base_color)
 
     def add_value(self, extractor, _timestamp, xy):
         try:
