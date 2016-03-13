@@ -48,7 +48,7 @@ class PlotterWindow(QMainWindow):
         self._stop_action.setStatusTip('While stopped, all new data will be discarded')
         self._stop_action.setShortcut(QKeySequence('Ctrl+Shift+S'))
         self._stop_action.setCheckable(True)
-        self._stop_action.toggled.connect(lambda _: self._pause_action.setChecked(False))   # Reset
+        self._stop_action.toggled.connect(self._on_stop_toggled)
         control_menu.addAction(self._stop_action)
 
         self._pause_action = QAction(get_icon('pause'), '&Pause Updates', self)
@@ -56,6 +56,7 @@ class PlotterWindow(QMainWindow):
                                         'to be processed once un-paused')
         self._pause_action.setShortcut(QKeySequence('Ctrl+P'))
         self._pause_action.setCheckable(True)
+        self._pause_action.toggled.connect(self._on_pause_toggled)
         control_menu.addAction(self._pause_action)
 
         control_menu.addSeparator()
@@ -84,6 +85,13 @@ class PlotterWindow(QMainWindow):
         self.setCentralWidget(None)
 
         self.resize(800, 600)
+
+    def _on_stop_toggled(self, checked):
+        self._pause_action.setChecked(False)
+        self.statusBar().showMessage('Stopped' if checked else 'Un-stopped')
+
+    def _on_pause_toggled(self, checked):
+        self.statusBar().showMessage('Paused' if checked else 'Un-paused')
 
     def _do_add_new_plot(self, plot_area_name):
         def remove():
@@ -117,6 +125,7 @@ class PlotterWindow(QMainWindow):
         if self._stop_action.isChecked():
             while self._get_transfer() is not None:     # Discarding everything
                 pass
+            return
 
         if not self._pause_action.isChecked():
             while True:
