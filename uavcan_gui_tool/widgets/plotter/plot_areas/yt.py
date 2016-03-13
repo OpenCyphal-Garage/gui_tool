@@ -164,6 +164,9 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
     def reset(self):
         self._do_clear()
         self._max_x = 0
+        self._plot.enableAutoRange()
+        # noinspection PyArgumentList
+        self._plot.setRange(xRange=(0, self.INITIAL_X_RANGE), padding=0)
 
     def update(self):
         # Updating curves

@@ -176,9 +176,13 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot.removeItem(self._extractor_associations[extractor].plot)
         del self._extractor_associations[extractor]
 
-    def reset(self):
+    def _do_clear(self):
         for k in list(self._extractor_associations.keys()):
             self.remove_curves_provided_by_extractor(k)
+
+    def reset(self):
+        self._do_clear()
+        self._plot.enableAutoRange()
 
     def update(self):
         for c in self._extractor_associations.values():
