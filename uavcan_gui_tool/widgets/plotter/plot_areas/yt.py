@@ -52,7 +52,7 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
     INITIAL_X_RANGE = 120
     MAX_CURVES_PER_EXTRACTOR = 9
 
-    def __init__(self, parent):
+    def __init__(self, parent, display_measurements):
         super(PlotAreaYTWidget, self).__init__(parent)
 
         self._extractor_associations = {}       # Extractor : plots
@@ -86,8 +86,8 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         self.setLayout(layout)
 
         # Crosshair
-        def render_measurements(cur, ref):
-            text = 't %.6f sec,  y %.6f' % cur
+        def _render_measurements(cur, ref):
+            text = 'time %.6f sec,  y %.6f' % cur
             if ref is None:
                 return text
             dt = cur[0] - ref[0]
@@ -96,9 +96,10 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
                 freq = '%.6f' % abs(1 / dt)
             else:
                 freq = 'inf'
-            return text + ';' + ' ' * 4 + 'dt %.6f sec,  freq %s Hz,  dy %.6f' % (dt, freq, dy)
+            display_measurements(text + ';' + ' ' * 4 + 'dt %.6f sec,  freq %s Hz,  dy %.6f' % (dt, freq, dy))
 
-        add_crosshair(self._plot, render_measurements)
+        display_measurements('Hover to sample Time/Y, click to set new reference')
+        add_crosshair(self._plot, _render_measurements)
 
     def _forge_curves(self, how_many, base_color):
         if how_many > 1 and self._legend is None:

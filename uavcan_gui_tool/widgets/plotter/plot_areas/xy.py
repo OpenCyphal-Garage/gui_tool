@@ -63,7 +63,7 @@ class ScatterPlotContainer(AbstractPlotContainer):
 
 
 class PlotAreaXYWidget(QWidget, AbstractPlotArea):
-    def __init__(self, parent):
+    def __init__(self, parent, display_measurements):
         super(PlotAreaXYWidget, self).__init__(parent)
 
         self._extractor_associations = {}       # Extractor : plot
@@ -120,16 +120,18 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self.setLayout(layout)
 
         # Crosshair
-        def render_measurements(cur, ref):
+        def _render_measurements(cur, ref):
             text = 'x %.6f,  y %.6f' % cur
             if ref is None:
                 return text
             dx = cur[0] - ref[0]
             dy = cur[1] - ref[1]
             dist = math.sqrt(dx ** 2 + dy ** 2)
-            return text + ';' + ' ' * 4 + 'dx %.6f,  dy %.6f,  dist %.6f' % (dx, dy, dist)
+            text += ';' + ' ' * 4 + 'dx %.6f,  dy %.6f,  dist %.6f' % (dx, dy, dist)
+            display_measurements(text)
 
-        add_crosshair(self._plot, render_measurements)
+        display_measurements('Hover to sample X/Y, click to set new reference')
+        add_crosshair(self._plot, _render_measurements)
 
         # Initialization
         self._update_aspect_ratio()

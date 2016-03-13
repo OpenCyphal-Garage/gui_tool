@@ -10,7 +10,6 @@ from collections import OrderedDict
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import mkPen, InfiniteLine
-from ... import flash
 
 
 class AbstractPlotArea:
@@ -38,9 +37,8 @@ def add_crosshair(plot, render_measurements, color=Qt.gray):
     current_coordinates = None
     reference_coordinates = None
 
-    def show_updates():
-        text = render_measurements(current_coordinates, reference_coordinates)
-        flash(plot, text)
+    def do_render():
+        render_measurements(current_coordinates, reference_coordinates)
 
     def update(pos):
         nonlocal current_coordinates
@@ -49,13 +47,13 @@ def add_crosshair(plot, render_measurements, color=Qt.gray):
             current_coordinates = mouse_point.x(), mouse_point.y()
             vline.setPos(mouse_point.x())
             hline.setPos(mouse_point.y())
-            show_updates()
+            do_render()
 
     def set_reference(ev):
         nonlocal reference_coordinates
         if ev.button() == Qt.LeftButton and current_coordinates is not None:
             reference_coordinates = current_coordinates
-            show_updates()
+            do_render()
 
     plot.scene().sigMouseMoved.connect(update)
     plot.scene().sigMouseClicked.connect(set_reference)

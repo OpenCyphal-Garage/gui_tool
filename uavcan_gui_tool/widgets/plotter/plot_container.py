@@ -21,7 +21,8 @@ class PlotContainerWidget(QDockWidget):
 
         self.on_close = lambda: None
 
-        self._plot_area = plot_area_class(self)
+        self._plot_area = plot_area_class(self, display_measurements=self.setWindowTitle)
+
         self.update = self._plot_area.update
         self.reset = self._plot_area.reset
 
