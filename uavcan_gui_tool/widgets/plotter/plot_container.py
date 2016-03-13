@@ -19,8 +19,11 @@ class PlotContainerWidget(QDockWidget):
     def __init__(self, parent, plot_area_class, active_data_types):
         super(PlotContainerWidget, self).__init__(parent)
 
+        self.on_close = lambda: None
+
         self._plot_area = plot_area_class(self)
         self.update = self._plot_area.update
+        self.reset = self._plot_area.reset
 
         self._active_data_types = active_data_types
         self._extractors = []
@@ -75,3 +78,7 @@ class PlotContainerWidget(QDockWidget):
                 self._plot_area.add_value(extractor, timestamp, value)
             except Exception:
                 extractor.register_error()
+
+    def closeEvent(self, qcloseevent):
+        super(PlotContainerWidget, self).closeEvent(qcloseevent)
+        self.on_close()

@@ -161,6 +161,10 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         for k in list(self._extractor_associations.keys()):
             self.remove_curves_provided_by_extractor(k)
 
+    def reset(self):
+        self._do_clear()
+        self._max_x = 0
+
     def update(self):
         # Updating curves
         for curves in self._extractor_associations.values():

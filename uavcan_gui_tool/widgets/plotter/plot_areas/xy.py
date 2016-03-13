@@ -68,7 +68,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
 
         self._extractor_associations = {}       # Extractor : plot
 
-        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self._do_clear,
+        self._clear_button = make_icon_button('eraser', 'Clear all plots', self, on_clicked=self.reset,
                                               text='Clear')
 
         self._max_data_points = 100000
@@ -83,7 +83,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot_mode_box.setEditable(False)
         self._plot_mode_box.addItems(['Line', 'Scatter'])
         self._plot_mode_box.setCurrentIndex(0)
-        self._plot_mode_box.currentTextChanged.connect(self._do_clear)
+        self._plot_mode_box.currentTextChanged.connect(self.reset)
 
         self._lock_aspect_ratio_checkbox = QCheckBox('Lock aspect ratio:', self)
         self._lock_aspect_ratio_checkbox.setChecked(True)
@@ -176,7 +176,7 @@ class PlotAreaXYWidget(QWidget, AbstractPlotArea):
         self._plot.removeItem(self._extractor_associations[extractor].plot)
         del self._extractor_associations[extractor]
 
-    def _do_clear(self):
+    def reset(self):
         for k in list(self._extractor_associations.keys()):
             self.remove_curves_provided_by_extractor(k)
 

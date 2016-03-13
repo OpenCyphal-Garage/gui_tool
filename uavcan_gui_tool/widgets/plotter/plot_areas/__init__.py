@@ -6,6 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+from collections import OrderedDict
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 from pyqtgraph import mkPen, InfiniteLine
@@ -20,6 +21,9 @@ class AbstractPlotArea:
         pass
 
     def update(self):
+        pass
+
+    def reset(self):
         pass
 
 
@@ -60,7 +64,7 @@ def add_crosshair(plot, render_measurements, color=Qt.gray):
 from .yt import PlotAreaYTWidget
 from .xy import PlotAreaXYWidget
 
-PLOT_AREAS = {
-    'Y-T plot': PlotAreaYTWidget,
-    'X-Y plot': PlotAreaXYWidget
-}
+PLOT_AREAS = OrderedDict([
+    ('Y-T plot', PlotAreaYTWidget),
+    ('X-Y plot', PlotAreaXYWidget),
+])
