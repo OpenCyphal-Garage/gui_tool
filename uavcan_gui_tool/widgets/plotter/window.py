@@ -54,7 +54,7 @@ class PlotterWindow(QMainWindow):
         self._pause_action = QAction(get_icon('pause'), '&Pause Updates', self)
         self._pause_action.setStatusTip('While paused, new data will be accumulated in memory '
                                         'to be processed once un-paused')
-        self._pause_action.setShortcut(QKeySequence('Ctrl+P'))
+        self._pause_action.setShortcut(QKeySequence('Ctrl+Shift+P'))
         self._pause_action.setCheckable(True)
         self._pause_action.toggled.connect(self._on_pause_toggled)
         control_menu.addAction(self._pause_action)

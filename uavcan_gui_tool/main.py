@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         show_bus_monitor_action.triggered.connect(self._bus_monitor_manager.spawn_monitor)
 
         show_console_action = QAction(get_icon('terminal'), 'Interactive &console', self)
-        show_console_action.setShortcut(QKeySequence('Ctrl+T'))
+        show_console_action.setShortcut(QKeySequence('Ctrl+Shift+T'))
         show_console_action.setStatusTip('Open interactive console window')
         show_console_action.triggered.connect(self._show_console_window)
 
