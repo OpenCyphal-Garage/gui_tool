@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # Copyright (C) 2016  UAVCAN Development Team  <uavcan.org>
 #
@@ -7,10 +6,8 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-# Initializing logging first
 import logging
 import multiprocessing
-import os
 import sys
 import time
 
@@ -23,8 +20,10 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO,
 
 logger = logging.getLogger(__name__.replace('__', ''))
 
-for path in ('pyqtgraph', 'pyuavcan'):
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', path))
+# Start method must be configured globally, and only once. Using 'spawn' ensures full compatibility with Windoze.
+# We need to check first if the start mode is already configured, because this code will be re-run for every child.
+if multiprocessing.get_start_method(True) != 'spawn':
+    multiprocessing.set_start_method('spawn')
 
 # Importing other stuff once the logging has been configured
 import uavcan
@@ -33,24 +32,24 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSp
 from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtCore import QTimer, Qt, QUrl
 
-from iface_configurator import run_iface_config_window
-from active_data_type_detector import ActiveDataTypeDetector
+from .version import __version__
+from .iface_configurator import run_iface_config_window
+from .active_data_type_detector import ActiveDataTypeDetector
 
-from widgets import show_error, get_icon, get_app_icon
-from widgets.node_monitor import NodeMonitorWidget
-from widgets.local_node import LocalNodeWidget
-from widgets.log_message_display import LogMessageDisplayWidget
-from widgets.bus_monitor import BusMonitorManager
-from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
-from widgets.file_server import FileServerWidget
-from widgets.node_properties import NodePropertiesWindow
-from widgets.console import ConsoleManager, InternalObjectDescriptor
-from widgets.subscriber import SubscriberWindow
-from widgets.plotter import PlotterManager
+from .widgets import show_error, get_icon, get_app_icon
+from .widgets.node_monitor import NodeMonitorWidget
+from .widgets.local_node import LocalNodeWidget
+from .widgets.log_message_display import LogMessageDisplayWidget
+from .widgets.bus_monitor import BusMonitorManager
+from .widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
+from .widgets.file_server import FileServerWidget
+from .widgets.node_properties import NodePropertiesWindow
+from .widgets.console import ConsoleManager, InternalObjectDescriptor
+from .widgets.subscriber import SubscriberWindow
+from .widgets.plotter import PlotterManager
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
-VERSION = 1, 0                      # TODO: load from setup.py or something
 
 
 class MainWindow(QMainWindow):
@@ -362,8 +361,9 @@ class MainWindow(QMainWindow):
         self._node_windows[node_id] = w
 
     def _show_about_window(self):
+        version_str = '.'.join(map(str, __version__))
         text = '\n\n'.join([
-            'UAVCAN GUI Tool version %d.%d.' % (VERSION[0], VERSION[1]),
+            'UAVCAN GUI Tool version %s.' % version_str,
             'This application is distributed under the terms of the MIT license.',
             'TODO: Add information about dependencies and their licenses.'
         ])
@@ -385,9 +385,6 @@ class MainWindow(QMainWindow):
 
 
 def main():
-    # Start method is configured globally. Using 'spawn' ensures full compatibility with Windoze.
-    multiprocessing.set_start_method('spawn')
-
     app = QApplication(sys.argv)
 
     while True:
@@ -404,8 +401,8 @@ def main():
         try:
             node_info = uavcan.protocol.GetNodeInfo.Response()
             node_info.name = NODE_NAME
-            node_info.software_version.major = VERSION[0]
-            node_info.software_version.minor = VERSION[1]
+            node_info.software_version.major = __version__[0]
+            node_info.software_version.minor = __version__[1]
 
             node = uavcan.make_node(iface,
                                     node_info=node_info,
@@ -428,7 +425,3 @@ def main():
     node.close()
 
     exit(exit_code)
-
-
-if __name__ == '__main__':
-    main()

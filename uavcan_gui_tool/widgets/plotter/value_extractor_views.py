@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QHBoxLayout, QGroupBox, QV
 from PyQt5.QtGui import QColor, QPalette, QFontMetrics
 from PyQt5.QtCore import Qt, QStringListModel, QTimer
 from .. import make_icon_button, get_monospace_font, CommitableComboBoxWithHistory, show_error
-from active_data_type_detector import ActiveDataTypeDetector
+from ...active_data_type_detector import ActiveDataTypeDetector
 from .value_extractor import EXPRESSION_VARIABLE_FOR_MESSAGE, EXPRESSION_VARIABLE_FOR_SRC_NODE_ID, Expression, \
     Extractor
 

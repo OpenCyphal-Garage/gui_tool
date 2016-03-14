@@ -8,7 +8,7 @@
 
 import sys
 import glob
-from widgets import show_error, get_monospace_font
+from .widgets import show_error, get_monospace_font
 from PyQt5.QtWidgets import QDialog, QSpinBox, QComboBox, QLineEdit, QPushButton, QLabel, QVBoxLayout, QCompleter
 from PyQt5.QtCore import Qt
 from logging import getLogger

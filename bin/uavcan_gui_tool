@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2016  UAVCAN Development Team  <uavcan.org>
+#
+# This software is distributed under the terms of the MIT License.
+#
+# Author: Pavel Kirienko <pavel.kirienko@zubax.com>
+#
+
+import os
+import sys
+
+#
+# This shim enables us to run directly from the source directory not having the package installed.
+#
+directory = os.path.dirname(os.path.abspath(__file__))
+if 'gui_tool' in directory:
+    print('Running from the source directory')
+    for dirpath, dirnames, filenames in os.walk(os.path.join(directory, '..')):
+        for d in dirnames:
+            if '.' not in d and 'bin' not in d:
+                sys.path.insert(0, os.path.abspath(os.path.join(directory, '..', d)))
+        break
+    sys.path.insert(0, os.path.abspath(os.path.join(directory, '..')))
+
+#
+# Calling main directly.
+# The 'if' wrapper is absolutely needed because we're spawning new processes with 'multiprocessing'; refer
+# to the Python docs for more info.
+#
+if __name__ == '__main__':
+    from uavcan_gui_tool.main import main
+    main()
