@@ -10,12 +10,12 @@ import datetime
 import time
 import os
 import uavcan
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QLabel, QSplitter, QSizePolicy
+from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePolicy, QWidget, QHBoxLayout
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, mkPen
 from logging import getLogger
-from . import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash
+from .. import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash, get_app_icon
 
 
 logger = getLogger(__name__)
@@ -163,16 +163,16 @@ class TrafficStatCounter:
         return (sum(self._last_fps_estimates) / len(self._last_fps_estimates)), self._prev_fps_checkpoint_mono
 
 
-class BusMonitorWidget(QGroupBox):
+class BusMonitorWindow(QMainWindow):
     DEFAULT_PLOT_X_RANGE = 120
-    BUS_LOAD_PLOT_MAX_SAMPLES = 5000
+    BUS_LOAD_PLOT_MAX_SAMPLES = 50000
 
-    def __init__(self, parent, node, iface_name):
-        super(BusMonitorWidget, self).__init__(parent)
-        self.setTitle('CAN bus activity (%s)' % iface_name.split(os.path.sep)[-1])
+    def __init__(self, get_frame, iface_name):
+        super(BusMonitorWindow, self).__init__()
+        self.setWindowTitle('CAN bus monitor (%s)' % iface_name.split(os.path.sep)[-1])
+        self.setWindowIcon(get_app_icon())
 
-        self._node = node
-        self._hook_handle = self._node.can_driver.add_io_hook(self._frame_hook)
+        self._get_frame = get_frame
 
         self._columns = [
             BasicTable.Column('Dir',
@@ -198,7 +198,7 @@ class BusMonitorWidget(QGroupBox):
         ]
 
         self._log_widget = RealtimeLogWidget(self, columns=self._columns, font=get_monospace_font(),
-                                             post_redraw_hook=self._redraw_hook)
+                                             pre_redraw_hook=self._redraw_hook)
         self._log_widget.on_selection_changed = self._update_measurement_display
 
         self._stat_display = QLabel('0 / 0 / 0', self)
@@ -227,7 +227,7 @@ class BusMonitorWidget(QGroupBox):
 
         self._load_plot = PlotWidget(background=(0, 0, 0))
         self._load_plot.setRange(xRange=(0, self.DEFAULT_PLOT_X_RANGE), padding=0)
-        self._load_plot.setMaximumHeight(150)
+        self._load_plot.setMaximumHeight(250)
         self._load_plot.setMinimumHeight(100)
         self._load_plot.setMinimumWidth(100)
         self._load_plot.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -242,12 +242,16 @@ class BusMonitorWidget(QGroupBox):
         splitter = QSplitter(Qt.Vertical, self)
         splitter.addWidget(self._log_widget)
         splitter.addWidget(self._load_plot)
-        layout = QHBoxLayout(self)
-        layout.addWidget(splitter)
-        self.setLayout(layout)
 
-    def close(self):
-        self._hook_handle.remove()
+        widget = QWidget(self)
+        layout = QHBoxLayout(widget)
+        layout.addWidget(splitter)
+        widget.setLayout(layout)
+
+        self.setCentralWidget(widget)
+        self.setMinimumWidth(700)
+        self.setMinimumHeight(400)
+        self.resize(800, 600)
 
     def _update_stat(self):
         bus_load, ts_mono = self._traffic_stat.get_frames_per_second()
@@ -268,12 +272,17 @@ class BusMonitorWidget(QGroupBox):
         self._load_plot.setRange(xRange=(xmin, xmax), padding=0)
 
     def _redraw_hook(self):
+        while True:
+            item = self._get_frame()
+            if item is None:
+                break
+            direction, frame = item
+            self._traffic_stat.add_frame(direction, frame)
+            # There is no need to maintain a second queue actually; should be refactored
+            self._log_widget.add_item_async((direction, frame))
+
         bus_load, _ = self._traffic_stat.get_frames_per_second()
         self._stat_display.setText('%d / %d / %d' % (self._traffic_stat.tx, self._traffic_stat.rx, bus_load))
-
-    def _frame_hook(self, direction, frame):
-        self._traffic_stat.add_frame(direction, frame)
-        self._log_widget.add_item_async((direction, frame))
 
     def _update_measurement_display(self, selected_rows_cols):
         if not selected_rows_cols:

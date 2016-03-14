@@ -40,7 +40,7 @@ from widgets import show_error, get_icon, get_app_icon
 from widgets.node_monitor import NodeMonitorWidget
 from widgets.local_node import LocalNodeWidget
 from widgets.log_message_display import LogMessageDisplayWidget
-from widgets.bus_monitor import BusMonitorWidget
+from widgets.bus_monitor import BusMonitorManager
 from widgets.dynamic_node_id_allocator import DynamicNodeIDAllocatorWidget
 from widgets.file_server import FileServerWidget
 from widgets.node_properties import NodePropertiesWindow
@@ -68,6 +68,8 @@ class MainWindow(QMainWindow):
 
         self._console_manager = ConsoleManager(self._make_console_context)
 
+        self._bus_monitor_manager = BusMonitorManager(self._node, iface_name)
+
         self._node_spin_timer = QTimer(self)
         self._node_spin_timer.timeout.connect(self._spin_node)
         self._node_spin_timer.setSingleShot(False)
@@ -80,10 +82,14 @@ class MainWindow(QMainWindow):
 
         self._local_node_widget = LocalNodeWidget(self, node)
         self._log_message_widget = LogMessageDisplayWidget(self, node)
-        self._bus_monitor_widget = BusMonitorWidget(self, node, iface_name)
         self._dynamic_node_id_allocation_widget = DynamicNodeIDAllocatorWidget(self, node,
                                                                                self._node_monitor_widget.monitor)
         self._file_server_widget = FileServerWidget(self, node)
+
+        show_bus_monitor_action = QAction(get_icon('bus'), '&Bus monitor', self)
+        show_bus_monitor_action.setShortcut(QKeySequence('Ctrl+Shift+B'))
+        show_bus_monitor_action.setStatusTip('Open bus monitor window')
+        show_bus_monitor_action.triggered.connect(self._bus_monitor_manager.spawn_monitor)
 
         show_console_action = QAction(get_icon('terminal'), 'Interactive &console', self)
         show_console_action.setShortcut(QKeySequence('Ctrl+T'))
@@ -102,6 +108,7 @@ class MainWindow(QMainWindow):
         new_plotter_action.triggered.connect(self._plotter_manager.spawn_plotter)
 
         tools_menu = self.menuBar().addMenu('&Tools')
+        tools_menu.addAction(show_bus_monitor_action)
         tools_menu.addAction(show_console_action)
         tools_menu.addAction(new_subscriber_action)
         tools_menu.addAction(new_plotter_action)
@@ -124,16 +131,13 @@ class MainWindow(QMainWindow):
             return spl
 
         self.setCentralWidget(make_splitter(Qt.Horizontal,
+                                            make_vbox(self._local_node_widget,
+                                                      self._node_monitor_widget,
+                                                      self._file_server_widget),
                                             make_splitter(Qt.Vertical,
-                                                          make_vbox(self._local_node_widget,
-                                                                    self._node_monitor_widget,
-                                                                    stretch_index=1),
-                                                          make_vbox(self._log_message_widget,
-                                                                    self._file_server_widget,
-                                                                    stretch_index=0)),
-                                            make_splitter(Qt.Vertical,
-                                                          make_vbox(self._bus_monitor_widget),
-                                                          make_vbox(self._dynamic_node_id_allocation_widget))))
+                                                          make_vbox(self._log_message_widget),
+                                                          make_vbox(self._dynamic_node_id_allocation_widget,
+                                                                    stretch_index=1))))
 
     def _make_console_context(self):
         default_transfer_priority = 30

@@ -444,12 +444,12 @@ class LabelWithIcon(QPushButton):
 
 
 class RealtimeLogWidget(QWidget):
-    def __init__(self, parent, started_by_default=False, post_redraw_hook=None, **table_options):
+    def __init__(self, parent, started_by_default=False, pre_redraw_hook=None, **table_options):
         super(RealtimeLogWidget, self).__init__(parent)
 
         self.on_selection_changed = None
 
-        self.post_redraw_hook = post_redraw_hook or (lambda: None)
+        self.pre_redraw_hook = pre_redraw_hook or (lambda: None)
 
         self._table = BasicTable(self, **table_options)
         self._table.selectionModel().selectionChanged.connect(self._call_on_selection_changed)
@@ -524,6 +524,8 @@ class RealtimeLogWidget(QWidget):
         self.on_selection_changed(selected_rows_cols)
 
     def _redraw(self):
+        self.pre_redraw_hook()
+
         if self.started:
             self._table.setUpdatesEnabled(False)
 
@@ -550,8 +552,6 @@ class RealtimeLogWidget(QWidget):
             # Discarding inputs
             while self._queue.qsize() > 0:
                 self._queue.get_nowait()
-
-        self.post_redraw_hook()
 
     def _on_start_button_clicked(self):
         self._pause.setChecked(False)
