@@ -7,7 +7,7 @@
 #
 
 import logging
-from PyQt5.QtWidgets import QDockWidget, QVBoxLayout, QHBoxLayout, QWidget
+from PyQt5.QtWidgets import QDockWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel
 from .. import make_icon_button
 from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 
@@ -32,6 +32,8 @@ class PlotContainerWidget(QDockWidget):
         self._new_extractor_button = make_icon_button('plus', 'Add new value extractor', self,
                                                       on_clicked=self._do_new_extractor)
 
+        self._how_to_label = QLabel('\u27F5 Click to configure plotting', self)
+
         widget = QWidget(self)
 
         layout = QVBoxLayout(widget)
@@ -44,6 +46,7 @@ class PlotContainerWidget(QDockWidget):
         controls_layout.addStretch(1)
         controls_layout.setContentsMargins(0, 0, 0, 0)
         footer_layout.addLayout(controls_layout)
+        footer_layout.addWidget(self._how_to_label, 1)
 
         self._extractors_layout = QVBoxLayout(widget)
         self._extractors_layout.setContentsMargins(0, 0, 0, 0)
@@ -62,6 +65,12 @@ class PlotContainerWidget(QDockWidget):
         self.setMinimumHeight(400)
 
     def _do_new_extractor(self):
+        if self._how_to_label is not None:
+            self._how_to_label.hide()
+            self._how_to_label.setParent(None)
+            self._how_to_label.deleteLater()
+            self._how_to_label = None
+
         def done(extractor):
             self._extractors.append(extractor)
             widget = ExtractorWidget(self, extractor)
