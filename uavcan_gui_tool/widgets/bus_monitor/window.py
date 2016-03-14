@@ -13,7 +13,7 @@ from functools import partial
 import uavcan
 from uavcan.driver import CANFrame
 from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePolicy, QWidget, QHBoxLayout, \
-    QPlainTextEdit
+    QPlainTextEdit, QDialog, QVBoxLayout, QMenu, QAction
 from PyQt5.QtGui import QColor, QIcon, QTextOption
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, mkPen
@@ -228,6 +228,9 @@ class BusMonitorWindow(QMainWindow):
 
         self._log_widget.table.cellClicked.connect(lambda row, col: self._decode_transfer_at_row(row))
 
+        self._log_widget.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self._log_widget.table.customContextMenuRequested.connect(self._context_menu_requested)
+
         self._stat_display = QLabel('0 / 0 / 0', self)
         stat_display_label = QLabel('TX / RX / FPS: ', self)
         stat_display_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -365,3 +368,30 @@ class BusMonitorWindow(QMainWindow):
             dt = last_ts - first_ts
             flash(self, '%d frames, timedelta %.6f sec, %s',
                   num_frames, dt, get_load_str(num_frames, dt))
+
+    def _context_menu_requested(self, pos):
+        menu = QMenu(self)
+
+        row_index = self._log_widget.table.rowAt(pos.y())
+        if row_index >= 0:
+            action_show_definition = QAction(get_icon('file-code-o'), 'Open data type &definition', self)
+            action_show_definition.triggered.connect(lambda: self._show_data_type_definition(row_index))
+            menu.addAction(action_show_definition)
+            menu.popup(self._log_widget.table.mapToGlobal(pos))
+
+    def _show_data_type_definition(self, row):
+        data_type_name = self._log_widget.table.item(row, self._log_widget.table.columnCount() - 1).text()
+        definition = uavcan.TYPENAMES[data_type_name].source_text
+
+        win = QDialog(self)
+        view = QPlainTextEdit(win)
+        view.setReadOnly(True)
+        view.setFont(get_monospace_font())
+        view.setPlainText(definition)
+        view.setLineWrapMode(QPlainTextEdit.NoWrap)
+        layout = QVBoxLayout(win)
+        layout.addWidget(view)
+        win.setWindowTitle('Data type definition [%s]' % data_type_name)
+        win.setLayout(layout)
+        win.resize(600, 300)
+        win.show()
