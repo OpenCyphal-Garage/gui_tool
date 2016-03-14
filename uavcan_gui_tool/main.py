@@ -29,9 +29,9 @@ for path in ('pyqtgraph', 'pyuavcan'):
 # Importing other stuff once the logging has been configured
 import uavcan
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction, QMessageBox
+from PyQt5.QtGui import QKeySequence, QDesktopServices
+from PyQt5.QtCore import QTimer, Qt, QUrl
 
 from iface_configurator import run_iface_config_window
 from active_data_type_detector import ActiveDataTypeDetector
@@ -50,6 +50,7 @@ from widgets.plotter import PlotterManager
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
+VERSION = 1, 0                      # TODO: load from setup.py or something
 
 
 class MainWindow(QMainWindow):
@@ -86,12 +87,15 @@ class MainWindow(QMainWindow):
                                                                                self._node_monitor_widget.monitor)
         self._file_server_widget = FileServerWidget(self, node)
 
-        show_bus_monitor_action = QAction(get_icon('bus'), '&Bus monitor', self)
+        #
+        # Tools menu
+        #
+        show_bus_monitor_action = QAction(get_icon('bus'), '&Bus Monitor', self)
         show_bus_monitor_action.setShortcut(QKeySequence('Ctrl+Shift+B'))
         show_bus_monitor_action.setStatusTip('Open bus monitor window')
         show_bus_monitor_action.triggered.connect(self._bus_monitor_manager.spawn_monitor)
 
-        show_console_action = QAction(get_icon('terminal'), 'Interactive &console', self)
+        show_console_action = QAction(get_icon('terminal'), 'Interactive &Console', self)
         show_console_action.setShortcut(QKeySequence('Ctrl+Shift+T'))
         show_console_action.setStatusTip('Open interactive console window')
         show_console_action.triggered.connect(self._show_console_window)
@@ -113,6 +117,22 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(new_subscriber_action)
         tools_menu.addAction(new_plotter_action)
 
+        #
+        # Help menu
+        #
+        uavcan_website_action = QAction(get_icon('globe'), 'UAVCAN &Website', self)
+        uavcan_website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('http://uavcan.org')))
+
+        about_action = QAction(get_icon('info'), '&About', self)
+        about_action.triggered.connect(self._show_about_window)
+
+        help_menu = self.menuBar().addMenu('&Help')
+        help_menu.addAction(uavcan_website_action)
+        help_menu.addAction(about_action)
+
+        #
+        # Window layout
+        #
         self.statusBar().show()
 
         def make_vbox(*widgets, stretch_index=None):
@@ -341,6 +361,14 @@ class MainWindow(QMainWindow):
         w.show()
         self._node_windows[node_id] = w
 
+    def _show_about_window(self):
+        text = '\n\n'.join([
+            'UAVCAN GUI Tool version %d.%d.' % (VERSION[0], VERSION[1]),
+            'This application is distributed under the terms of the MIT license.',
+            'TODO: Add information about dependencies and their licenses.'
+        ])
+        QMessageBox().about(self, 'About UAVCAN GUI Tool', text)
+
     def _spin_node(self):
         # We're running the node in the GUI thread.
         # This is not great, but at the moment seems like other options are even worse.
@@ -376,8 +404,8 @@ def main():
         try:
             node_info = uavcan.protocol.GetNodeInfo.Response()
             node_info.name = NODE_NAME
-            node_info.software_version.major = 1   # TODO: share with setup.py
-            node_info.software_version.minor = 0
+            node_info.software_version.major = VERSION[0]
+            node_info.software_version.minor = VERSION[1]
 
             node = uavcan.make_node(iface,
                                     node_info=node_info,
