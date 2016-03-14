@@ -226,7 +226,7 @@ class BusMonitorWindow(QMainWindow):
                                              pre_redraw_hook=self._redraw_hook)
         self._log_widget.on_selection_changed = self._update_measurement_display
 
-        self._log_widget.table.cellClicked.connect(self._on_cell_clicked)
+        self._log_widget.table.cellClicked.connect(lambda row, col: self._decode_transfer_at_row(row))
 
         self._stat_display = QLabel('0 / 0 / 0', self)
         stat_display_label = QLabel('TX / RX / FPS: ', self)
@@ -324,7 +324,7 @@ class BusMonitorWindow(QMainWindow):
         bus_load, _ = self._traffic_stat.get_frames_per_second()
         self._stat_display.setText('%d / %d / %d' % (self._traffic_stat.tx, self._traffic_stat.rx, bus_load))
 
-    def _on_cell_clicked(self, row, _col):
+    def _decode_transfer_at_row(self, row):
         try:
             rows, text = decode_transfer_from_frame(row, partial(row_to_frame, self._log_widget.table))
         except Exception as ex:
@@ -339,6 +339,9 @@ class BusMonitorWindow(QMainWindow):
 
         min_row = min([row for row, _ in selected_rows_cols])
         max_row = max([row for row, _ in selected_rows_cols])
+
+        if min_row == max_row:
+            self._decode_transfer_at_row(min_row)
 
         def get_row_ts(row):
             return TimestampRenderer.parse_timestamp(self._log_widget.table.item(row, 1).text())
