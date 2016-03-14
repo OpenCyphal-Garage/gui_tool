@@ -16,14 +16,9 @@ from version import __version__
 
 assert sys.version_info[0] == 3, 'Python 3 is required'
 
-# Not sure yet if this is a good idea
-os.system('git submodule update --init --recursive')
-
-version = '.'.join(map(str, __version__))
-
 args = dict(
     name='uavcan_gui_tool',
-    version=version,
+    version='.'.join(map(str, __version__)),
     packages=find_packages(),
     install_requires=[
         'uavcan',
@@ -36,7 +31,12 @@ args = dict(
         # TODO: Migrate to PyQtGraph from PIP when it's updated there. Current version from PIP doesn't work with PyQt5.
         'https://github.com/pyqtgraph/pyqtgraph/tarball/9d64b269d57c84faa00ecd92474ca67eb45e6094#egg=pyqtgraph-0.9.10',
     ],
-    scripts=['bin/uavcan_gui_tool'],
+    # We can't use "scripts" here, because generated shims don't work with multiprocessing pickler.
+    entry_points={
+        'gui_scripts': [
+            'uavcan_gui_tool = uavcan_gui_tool.main:main',
+        ]
+    },
 
     # Meta fields, they have no technical meaning
     description='Cross-platform GUI tool for UAVCAN protocol',
