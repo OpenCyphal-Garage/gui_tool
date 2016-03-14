@@ -10,6 +10,8 @@ import sys
 import logging
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QCheckBox
 
+logger = logging.getLogger(__name__)
+
 try:
     # noinspection PyUnresolvedReferences
     from qtconsole.rich_jupyter_widget import RichJupyterWidget
@@ -19,9 +21,7 @@ try:
     JUPYTER_AVAILABLE = True
 except ImportError:
     JUPYTER_AVAILABLE = False
-
-
-logger = logging.getLogger(__name__)
+    logger.info('Jupyter is not avialable', exc_info=True)
 
 
 if JUPYTER_AVAILABLE:
