@@ -58,6 +58,9 @@ class PlotContainerWidget(QDockWidget):
                          QDockWidget.DockWidgetClosable |
                          QDockWidget.DockWidgetMovable)
 
+        self.setMinimumWidth(700)
+        self.setMinimumHeight(400)
+
     def _do_new_extractor(self):
         def done(extractor):
             self._extractors.append(extractor)

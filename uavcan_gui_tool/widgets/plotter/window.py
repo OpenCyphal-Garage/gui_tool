@@ -83,8 +83,7 @@ class PlotterWindow(QMainWindow):
         #
         self.statusBar().showMessage('Use the "New Plot" menu to add plots')
         self.setCentralWidget(None)
-
-        self.resize(800, 600)
+        self.resize(600, 400)
 
     def _on_stop_toggled(self, checked):
         self._pause_action.setChecked(False)
@@ -109,6 +108,9 @@ class PlotterWindow(QMainWindow):
         ]
         dock_to = docks[(len(self._plot_containers) - 1) % len(docks)]
         self.addDockWidget(dock_to, plc)
+
+        if len(self._plot_containers) > 1:
+            self.statusBar().showMessage('Drag plots by the header to rearrange or detach them')
 
     def _do_reset(self):
         self._base_time = time.monotonic()
