@@ -20,25 +20,22 @@ assert sys.version_info[0] == 3, 'Python 3 is required'
 os.system('git submodule update --init --recursive')
 
 version = '.'.join(map(str, __version__))
-print('Version:', version)
-
-# TODO: Migrate to PyQtGraph from PIP when it's updated there. Current version from PIP doesn't work with PyQt5.
-packages = find_packages('uavcan_gui_tool') + find_packages('pyqtgraph', exclude=['*examples*'])
-print('Packages:', *packages, sep='\n')
-
-dependencies = [
-    'uavcan',
-    'qtconsole',
-    'numpy',
-    'matplotlib',
-    'pylab',
-]
 
 args = dict(
     name='uavcan_gui_tool',
     version=version,
-    packages=packages,
-    install_requires=dependencies,
+    packages=find_packages(),
+    install_requires=[
+        'uavcan',
+        'qtconsole',
+        'numpy',
+        'matplotlib',
+        'pyqtgraph>=0.9.10',
+    ],
+    dependency_links=[
+        # TODO: Migrate to PyQtGraph from PIP when it's updated there. Current version from PIP doesn't work with PyQt5.
+        'https://github.com/pyqtgraph/pyqtgraph/tarball/9d64b269d57c84faa00ecd92474ca67eb45e6094#egg=pyqtgraph-0.9.10',
+    ],
     scripts=['bin/uavcan_gui_tool'],
 
     # Meta fields, they have no technical meaning
