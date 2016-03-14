@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo rm -rf build uavcan_gui_tool.* dist*
+sudo rm -rf build uavcan_gui_tool.* dist* *-*.egg
