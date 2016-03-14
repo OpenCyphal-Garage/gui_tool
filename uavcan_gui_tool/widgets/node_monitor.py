@@ -71,6 +71,8 @@ class NodeTable(BasicTable):
         self._timer.timeout.connect(self._update)
         self._timer.start(500)
 
+        self.setMinimumWidth(450)
+
     @property
     def monitor(self):
         return self._monitor

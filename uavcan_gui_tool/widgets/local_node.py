@@ -10,7 +10,7 @@ import uavcan
 from PyQt5.QtWidgets import QGroupBox, QLabel, QSpinBox, QHBoxLayout
 from PyQt5.QtCore import QTimer
 from logging import getLogger
-from . import make_icon_button
+from . import make_icon_button, flash
 
 logger = getLogger(__name__)
 
@@ -20,8 +20,6 @@ NODE_ID_MAX = 127
 
 
 class LocalNodeWidget(QGroupBox):
-    DEFAULT_COMMENT = 'Some functions will be unavailable if node ID is not set'
-
     def __init__(self, parent, node):
         super(LocalNodeWidget, self).__init__(parent)
         self.setTitle('Local node properties')
@@ -31,7 +29,6 @@ class LocalNodeWidget(QGroupBox):
             self._node, uavcan.protocol.NodeStatus, timeout=uavcan.protocol.NodeStatus().OFFLINE_TIMEOUT_MS * 1e-3)
 
         self._node_id_label = QLabel('Set local node ID:', self)
-        self._node_id_comment = QLabel(self.DEFAULT_COMMENT, self)
 
         self._node_id_spinbox = QSpinBox(self)
         self._node_id_spinbox.setMaximum(NODE_ID_MAX)
@@ -45,7 +42,7 @@ class LocalNodeWidget(QGroupBox):
         self._update_timer = QTimer(self)
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
-        self._update_timer.start(200)
+        self._update_timer.start(500)
 
         self._update()
 
@@ -53,10 +50,11 @@ class LocalNodeWidget(QGroupBox):
         layout.addWidget(self._node_id_label)
         layout.addWidget(self._node_id_spinbox)
         layout.addWidget(self._node_id_apply)
-        layout.addWidget(self._node_id_comment)
         layout.addStretch(1)
 
         self.setLayout(layout)
+
+        flash(self, 'Some functions will be unavailable unless local node ID is set')
 
     def close(self):
         self._node_id_collector.close()
@@ -66,9 +64,9 @@ class LocalNodeWidget(QGroupBox):
             self._node_id_spinbox.setEnabled(False)
             self._node_id_spinbox.setValue(self._node.node_id)
             self._node_id_apply.hide()
-            self._node_id_comment.hide()
             self._node_id_label.setText('Local node ID:')
             self._update_timer.stop()
+            flash(self, 'Local node ID set to %d, all functions should be available now', self._node.node_id)
         else:
             prohibited_node_ids = set(self._node_id_collector)
             while True:
@@ -79,11 +77,11 @@ class LocalNodeWidget(QGroupBox):
                     break
 
             if nid in prohibited_node_ids:
-                self._node_id_apply.setEnabled(False)
-                self._node_id_comment.setText('This node ID is used by another node')
+                if self._node_id_apply.isEnabled():
+                    self._node_id_apply.setEnabled(False)
+                    flash(self, 'Selected node ID is used by another node, try different one', duration=3)
             else:
                 self._node_id_apply.setEnabled(True)
-                self._node_id_comment.setText(self.DEFAULT_COMMENT)
 
     def _on_node_id_apply_clicked(self):
         nid = int(self._node_id_spinbox.value())
