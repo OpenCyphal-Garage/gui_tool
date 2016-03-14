@@ -9,13 +9,17 @@
 import datetime
 import time
 import os
+from functools import partial
 import uavcan
-from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePolicy, QWidget, QHBoxLayout
-from PyQt5.QtGui import QColor, QIcon
+from uavcan.driver import CANFrame
+from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePolicy, QWidget, QHBoxLayout, \
+    QPlainTextEdit
+from PyQt5.QtGui import QColor, QIcon, QTextOption
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, mkPen
 from logging import getLogger
 from .. import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash, get_app_icon
+from .transfer_decoder import decode_transfer_from_frame
 
 
 logger = getLogger(__name__)
@@ -163,6 +167,50 @@ class TrafficStatCounter:
         return (sum(self._last_fps_estimates) / len(self._last_fps_estimates)), self._prev_fps_checkpoint_mono
 
 
+COLUMNS = [
+    BasicTable.Column('Dir',
+                      lambda e: (e[0].upper()),
+                      searchable=False),
+    BasicTable.Column('Local Time', TimestampRenderer(), searchable=False),
+    BasicTable.Column('CAN ID',
+                      lambda e: (('%0*X' % (8 if e[1].extended else 3, e[1].id)).rjust(8),
+                                 colorize_can_id(e[1]))),
+    BasicTable.Column('Data Hex',
+                      lambda e: (' '.join(['%02X' % x for x in e[1].data]).ljust(3 * e[1].MAX_DATA_LENGTH),
+                                 colorize_transfer_id(e))),
+    BasicTable.Column('Data ASCII',
+                      lambda e: (''.join([(chr(x) if 32 <= x <= 126 else '.') for x in e[1].data]),
+                                 colorize_transfer_id(e))),
+    BasicTable.Column('Src',
+                      lambda e: render_node_id_with_color(e[1], 'src')),
+    BasicTable.Column('Dst',
+                      lambda e: render_node_id_with_color(e[1], 'dst')),
+    BasicTable.Column('Data Type',
+                      lambda e: render_data_type_with_color(e[1]),
+                      resize_mode=QHeaderView.Stretch),
+]
+
+
+def row_to_frame(table, row_index):
+    if row_index >= table.rowCount():
+        return None
+
+    can_id = None
+    payload = None
+    extended = None
+
+    for col_index, col_spec in enumerate(COLUMNS):
+        item = table.item(row_index, col_index).text()
+        if col_spec.name == 'CAN ID':
+            extended = len(item.strip()) > 3
+            can_id = int(item, 16)
+        if col_spec.name == 'Data Hex':
+            payload = bytes([int(x, 16) for x in item.split()])
+
+    assert all(map(lambda x: x is not None, [can_id, payload, extended]))
+    return CANFrame(can_id, payload, extended, ts_monotonic=-1, ts_real=-1)
+
+
 class BusMonitorWindow(QMainWindow):
     DEFAULT_PLOT_X_RANGE = 120
     BUS_LOAD_PLOT_MAX_SAMPLES = 50000
@@ -174,32 +222,11 @@ class BusMonitorWindow(QMainWindow):
 
         self._get_frame = get_frame
 
-        self._columns = [
-            BasicTable.Column('Dir',
-                              lambda e: (e[0].upper()),
-                              searchable=False),
-            BasicTable.Column('Local Time', TimestampRenderer(), searchable=False),
-            BasicTable.Column('CAN ID',
-                              lambda e: (('%0*X' % (8 if e[1].extended else 3, e[1].id)).rjust(8),
-                                         colorize_can_id(e[1]))),
-            BasicTable.Column('Data Hex',
-                              lambda e: (' '.join(['%02X' % x for x in e[1].data]).ljust(3 * e[1].MAX_DATA_LENGTH),
-                                         colorize_transfer_id(e))),
-            BasicTable.Column('Data ASCII',
-                              lambda e: (''.join([(chr(x) if 32 <= x <= 126 else '.') for x in e[1].data]),
-                                         colorize_transfer_id(e))),
-            BasicTable.Column('Src',
-                              lambda e: render_node_id_with_color(e[1], 'src')),
-            BasicTable.Column('Dst',
-                              lambda e: render_node_id_with_color(e[1], 'dst')),
-            BasicTable.Column('Data Type',
-                              lambda e: render_data_type_with_color(e[1]),
-                              resize_mode=QHeaderView.Stretch),
-        ]
-
-        self._log_widget = RealtimeLogWidget(self, columns=self._columns, font=get_monospace_font(),
+        self._log_widget = RealtimeLogWidget(self, columns=COLUMNS, font=get_monospace_font(),
                                              pre_redraw_hook=self._redraw_hook)
         self._log_widget.on_selection_changed = self._update_measurement_display
+
+        self._log_widget.table.cellClicked.connect(self._on_cell_clicked)
 
         self._stat_display = QLabel('0 / 0 / 0', self)
         stat_display_label = QLabel('TX / RX / FPS: ', self)
@@ -225,11 +252,17 @@ class BusMonitorWindow(QMainWindow):
 
         self._traffic_stat = TrafficStatCounter()
 
+        self._decoded_message_box = QPlainTextEdit(self)
+        self._decoded_message_box.setReadOnly(True)
+        self._decoded_message_box.setFont(get_monospace_font())
+        self._decoded_message_box.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._decoded_message_box.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._decoded_message_box.setPlainText('Click on a row to see decoded transfer')
+        self._decoded_message_box.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self._decoded_message_box.setWordWrapMode(QTextOption.NoWrap)
+
         self._load_plot = PlotWidget(background=(0, 0, 0))
         self._load_plot.setRange(xRange=(0, self.DEFAULT_PLOT_X_RANGE), padding=0)
-        self._load_plot.setMaximumHeight(250)
-        self._load_plot.setMinimumHeight(100)
-        self._load_plot.setMinimumWidth(100)
         self._load_plot.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self._load_plot.showGrid(x=True, y=True, alpha=0.4)
         self._load_plot.setToolTip('Frames per second')
@@ -239,9 +272,17 @@ class BusMonitorWindow(QMainWindow):
         self._bus_load_samples = [], []
         self._started_at_mono = time.monotonic()
 
+        footer_splitter = QSplitter(Qt.Horizontal, self)
+        footer_splitter.addWidget(self._decoded_message_box)
+        self._decoded_message_box.setMinimumWidth(400)
+        footer_splitter.addWidget(self._load_plot)
+        self._load_plot.setMinimumWidth(200)
+        self._load_plot.setMaximumHeight(300)
+
         splitter = QSplitter(Qt.Vertical, self)
         splitter.addWidget(self._log_widget)
-        splitter.addWidget(self._load_plot)
+        self._log_widget.setMinimumHeight(300)
+        splitter.addWidget(footer_splitter)
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
@@ -250,7 +291,6 @@ class BusMonitorWindow(QMainWindow):
 
         self.setCentralWidget(widget)
         self.setMinimumWidth(700)
-        self.setMinimumHeight(400)
         self.resize(800, 600)
 
     def _update_stat(self):
@@ -283,6 +323,15 @@ class BusMonitorWindow(QMainWindow):
 
         bus_load, _ = self._traffic_stat.get_frames_per_second()
         self._stat_display.setText('%d / %d / %d' % (self._traffic_stat.tx, self._traffic_stat.rx, bus_load))
+
+    def _on_cell_clicked(self, row, _col):
+        try:
+            rows, text = decode_transfer_from_frame(row, partial(row_to_frame, self._log_widget.table))
+        except Exception as ex:
+            text = 'Transfer could not be decoded:\n' + str(ex)
+            rows = [row]
+
+        self._decoded_message_box.setPlainText(text.strip())
 
     def _update_measurement_display(self, selected_rows_cols):
         if not selected_rows_cols:
