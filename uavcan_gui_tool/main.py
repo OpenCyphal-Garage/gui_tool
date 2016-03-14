@@ -24,7 +24,7 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO,
 logger = logging.getLogger(__name__.replace('__', ''))
 
 for path in ('pyqtgraph', 'pyuavcan'):
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), path))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', path))
 
 # Importing other stuff once the logging has been configured
 import uavcan
