@@ -46,11 +46,11 @@ class PlotContainerWidget(QDockWidget):
         controls_layout.addStretch(1)
         controls_layout.setContentsMargins(0, 0, 0, 0)
         footer_layout.addLayout(controls_layout)
-        footer_layout.addWidget(self._how_to_label, 1)
+        footer_layout.addWidget(self._how_to_label)
 
         self._extractors_layout = QVBoxLayout(widget)
         self._extractors_layout.setContentsMargins(0, 0, 0, 0)
-        footer_layout.addLayout(self._extractors_layout)
+        footer_layout.addLayout(self._extractors_layout, 1)
 
         footer_layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(footer_layout)
