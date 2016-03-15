@@ -30,7 +30,17 @@ sudo ./setup.py install install_desktop
 
 ## Installing on Windows
 
-*Come back later.*
+These instructions are for developers only. End users should use pre-built MSI packages.
+
+First, install [WinPython 3.4 or newer, pre-packaged with PyQt5](http://winpython.github.io/).
+Make sure that `python` can be invoked from the terminal; if it can't, check your `PATH`.
+Having done that, execute the following:
+
+```dos
+python -m pip install cx_Freeze
+python setup.py install
+python setup.py bdist_msi
+```
 
 ## Installing on OSX
 

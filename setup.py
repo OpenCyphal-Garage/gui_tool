@@ -10,19 +10,22 @@
 import os
 import sys
 import shutil
+import pkg_resources
 from setuptools import setup, find_packages
+from setuptools.archive_util import unpack_archive
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'uavcan_gui_tool'))
+PACKAGE_NAME = 'uavcan_gui_tool'
+HUMAN_FRIENDLY_NAME = 'UAVCAN GUI Tool'
+
+sys.path.append(os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
 from version import __version__
 
 assert sys.version_info[0] == 3, 'Python 3 is required'
 
-PACKAGE_NAME = 'uavcan_gui_tool'
-
 ICON = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
 
 #
-# Setup args
+# Setup args common for all targets
 #
 args = dict(
     name=PACKAGE_NAME,
@@ -51,7 +54,7 @@ args = dict(
     ],
 
     # Meta fields, they have no technical meaning
-    description='Cross-platform GUI tool for UAVCAN protocol',
+    description='GUI application for UAVCAN bus management and diagnostics',
     author='Pavel Kirienko',
     author_email='uavcan@googlegroups.com',
     url='http://uavcan.org',
@@ -64,6 +67,9 @@ args = dict(
         'Topic :: Scientific/Engineering :: Visualization',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
+        'Environment :: X11 Applications',
+        'Environment :: Win32 (MS Windows)',
+        'Environment :: MacOS X',
     ]
 )
 
@@ -80,8 +86,9 @@ if 'install_desktop' in sys.argv:
     # Writing Desktop entry installation details
     args['desktop_entries'] = {
         PACKAGE_NAME: {
-            'Name': 'UAVCAN GUI Tool',
+            'Name': HUMAN_FRIENDLY_NAME,
             'GenericName': 'CAN Bus Diagnostics Tool',
+            'Comment': args['description'],
             'Categories': 'Development;Utility;',
             'Icon': icon_installation_path,
         }
@@ -94,6 +101,56 @@ if 'install_desktop' in sys.argv:
     except Exception:
         pass
     shutil.copy(ICON, icon_installation_path)
+
+#
+# Windows-specific options
+#
+if os.name == 'nt':
+    import cx_Freeze
+
+    explicit_dependencies = [           # Importable modules, not PyPI package names
+        'uavcan',
+        'serial',
+        'qtconsole',
+        'pyqtgraph',
+    ]
+
+    # cx_Freeze can't handle packages packed in .egg files, so we have to extract them for it
+    unpacked_eggs_dir = 'hatched_eggs'
+    sys.path.insert(0, unpacked_eggs_dir)
+    try:
+        shutil.rmtree(unpacked_eggs_dir)
+    except Exception:
+        pass
+    for dep in explicit_dependencies:
+        for egg in pkg_resources.require(dep):
+            if not os.path.isdir(egg.location):
+                unpack_archive(egg.location, unpacked_eggs_dir)
+
+    # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
+    args['options'] = {
+        'build_exe': {
+            'packages': explicit_dependencies,
+            'include_msvcr': True,
+            'include_files': [],            # TODO: Do we need to list icons here?
+        },
+        'bdist_msi': {
+            'initial_target_dir': '[ProgramFilesFolder]\\UAVCAN\\' + PACKAGE_NAME,
+        },
+    }
+    # Why is my life like that?
+    args['executables'] = [
+        cx_Freeze.Executable(os.path.join('bin', PACKAGE_NAME),
+                             base='Win32GUI',
+                             icon=ICON,
+                             shortcutName=HUMAN_FRIENDLY_NAME,
+                             shortcutDir='ProgramMenuFolder'),
+    ]
+    # Dispatching to cx_Freeze only if MSI build was requested expliclty. Otherwise continue with regular setup.
+    # This is done in order to be able to install dependencies with regular setuptools.
+    # TODO: This is probably not right.
+    if 'bdist_msi' in sys.argv:
+        setup = cx_Freeze.setup
 
 
 setup(**args)
