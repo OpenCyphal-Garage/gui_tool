@@ -30,6 +30,7 @@ args = dict(
     packages=find_packages(),
     install_requires=[
         'uavcan',
+        'pyserial',
         'qtconsole',
         'numpy',
         'matplotlib',
