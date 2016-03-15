@@ -8,6 +8,7 @@
 
 import os
 import re
+import pkg_resources
 import queue
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QApplication, QWidget, \
     QComboBox, QCompleter, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
@@ -626,13 +627,14 @@ def get_app_icon():
     try:
         return _APP_ICON_OBJECT
     except NameError:
-        # noinspection PyBroadException
-        try:
-            _APP_ICON_OBJECT = QIcon(os.path.join(os.path.dirname(__file__), '..', 'icon.png'))
-        except Exception:
-            logger.error('Could not load icon', exc_info=True)
-            _APP_ICON_OBJECT = QIcon()
-
+        pass
+    # noinspection PyBroadException
+    try:
+        fn = pkg_resources.resource_filename('uavcan_gui_tool', os.path.join('icons', 'icon_256x256.png'))
+        _APP_ICON_OBJECT = QIcon(fn)
+    except Exception:
+        logger.error('Could not load icon', exc_info=True)
+        _APP_ICON_OBJECT = QIcon()
     return _APP_ICON_OBJECT
 
 
