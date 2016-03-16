@@ -11,7 +11,7 @@ import os
 import datetime
 from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
-    QHeaderView, QSpinBox, QCheckBox, QFileDialog, QApplication
+    QHeaderView, QSpinBox, QCheckBox, QFileDialog, QApplication, QPlainTextEdit
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPalette
 from logging import getLogger
@@ -174,12 +174,18 @@ class Controls(QGroupBox):
         self._restart_button = make_icon_button('power-off', 'Restart the node [uavcan.protocol.RestartNode]', self,
                                                 text='Restart', on_clicked=self._do_restart)
 
+        self._transport_stats_button = make_icon_button('truck',
+                                                        'Request transport stats [uavcan.protocol.GetTransportStats]',
+                                                        self, text='Get Transport Stats',
+                                                        on_clicked=self._do_get_transport_stats)
+
         self._update_button = make_icon_button('bug',
                                                'Request firmware update [uavcan.protocol.file.BeginFirmwareUpdate]',
-                                               self, text='Update firmware', on_clicked=self._do_firmware_update)
+                                               self, text='Update Firmware', on_clicked=self._do_firmware_update)
 
         layout = QHBoxLayout(self)
         layout.addWidget(self._restart_button, 1)
+        layout.addWidget(self._transport_stats_button, 1)
         layout.addWidget(self._update_button, 1)
         self.setLayout(layout)
 
@@ -200,6 +206,32 @@ class Controls(QGroupBox):
             self.window().show_message('Restart requested')
         except Exception as ex:
             show_error('Node error', 'Could not send restart request', ex, self)
+
+    def _do_get_transport_stats(self):
+        def callback(e):
+            if e is None:
+                self.window().show_message('Transport stats request timed out')
+            else:
+                text = uavcan.to_yaml(e.response)
+                win = QDialog(self)
+                view = QPlainTextEdit(win)
+                view.setReadOnly(True)
+                view.setFont(get_monospace_font())
+                view.setPlainText(text)
+                view.setLineWrapMode(QPlainTextEdit.NoWrap)
+                layout = QVBoxLayout(win)
+                layout.addWidget(view)
+                win.setModal(True)
+                win.setWindowTitle('Transport stats of node %r' % e.transfer.source_node_id)
+                win.setLayout(layout)
+                win.show()
+        try:
+            self._node.request(uavcan.protocol.GetTransportStats.Request(),
+                               self._target_node_id, callback, priority=REQUEST_PRIORITY)
+            self.window().show_message('Transport stats requested')
+        except Exception as ex:
+            show_error('Node error', 'Could not send stats request', ex, self)
+
 
     def _do_firmware_update(self):
         # Making sure the node is not anonymous
