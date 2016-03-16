@@ -164,6 +164,8 @@ class MainWindow(QMainWindow):
     def _make_console_context(self):
         default_transfer_priority = 30
 
+        active_handles = []
+
         def print_yaml(obj):
             """
             Formats the argument as YAML structure using uavcan.to_yaml(), and prints the result into stdout.
@@ -262,6 +264,7 @@ class MainWindow(QMainWindow):
                             timer_handle.remove()
 
                 timer_handle = self._node.periodic(interval, process_next)
+                active_handles.append(timer_handle)
                 return timer_handle
 
         def subscribe(uavcan_type, callback=None, count=None, duration=None, on_end=None):
@@ -320,7 +323,19 @@ class MainWindow(QMainWindow):
             timer_handle = None
             if duration is not None:
                 timer_handle = self._node.defer(duration, cancel_callback)
+            active_handles.append(sub_handle)
             return sub_handle
+
+        def stop():
+            """
+            Stops all periodic broadcasts (see broadcast()) and terminates all subscriptions (see subscribe()).
+            """
+            for h in active_handles:
+                try:
+                    h.remove()
+                except Exception:
+                    pass
+            active_handles.clear()
 
         return [
             InternalObjectDescriptor('can_iface_name', self._iface_name,
@@ -335,6 +350,8 @@ class MainWindow(QMainWindow):
                                      'Broadcasts UAVCAN messages, once or periodically'),
             InternalObjectDescriptor('subscribe', subscribe,
                                      'Receives UAVCAN messages'),
+            InternalObjectDescriptor('stop', stop,
+                                     'Stops all periodic broadcasts and terminates all subscriptions'),
             InternalObjectDescriptor('print_yaml', print_yaml,
                                      'Prints UAVCAN entities in YAML format'),
             InternalObjectDescriptor('uavcan', uavcan,
