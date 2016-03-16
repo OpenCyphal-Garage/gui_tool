@@ -135,14 +135,21 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     args['options'] = {
         'build_exe': {
             'include_msvcr': True,
-            'include_files': [],            # TODO: Do we need to list icons here?
+            'include_files': [
+                # cx_Freeze doesn't respect the DSDL definition files that are embedded into the package,
+                # so we need to include the Pyuavcan package as data in order to work-around this problem.
+                # Despite the fact that Pyuavcan is included as data, we still need cx_Freeze to analyze its
+                # dependencies, so we don't exclude it explicilty.
+                os.path.join(unpacked_eggs_dir, 'uavcan'),
+                # Same thing goes with the main package - we want its directory structure untouched, so we include
+                # it as data, too.
+                PACKAGE_NAME,
+            ],
         },
         'bdist_msi': {
             'initial_target_dir': '[ProgramFilesFolder]\\UAVCAN\\' + HUMAN_FRIENDLY_NAME,
         },
     }
-    # Specifying icon= causes cx_Freeze to segfault! Why is my life like that?
-    # See http://stackoverflow.com/questions/18164354
     args['executables'] = [
         cx_Freeze.Executable(os.path.join('bin', PACKAGE_NAME),
                              base='Win32GUI',
@@ -150,7 +157,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                              shortcutName=HUMAN_FRIENDLY_NAME,
                              shortcutDir='ProgramMenuFolder'),
     ]
-    # Dispatching to cx_Freeze only if MSI build was requested expliclty. Otherwise continue with regular setup.
+    # Dispatching to cx_Freeze only if MSI build was requested explicitly. Otherwise continue with regular setup.
     # This is done in order to be able to install dependencies with regular setuptools.
     # TODO: This is probably not right.
     setup = cx_Freeze.setup
