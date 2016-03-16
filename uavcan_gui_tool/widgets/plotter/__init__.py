@@ -159,7 +159,10 @@ class PlotterManager:
             msg = MessageTransfer(tr)
             for proc, channel in self._inferiors[:]:
                 if proc.is_alive():
-                    channel.send_nonblocking(msg)
+                    try:
+                        channel.send_nonblocking(msg)
+                    except Exception:
+                        logger.error('Failed to send data to process %r', proc, exc_info=True)
                 else:
                     logger.info('Plotter process %r appears to be dead, removing', proc)
                     self._inferiors.remove((proc, channel))
@@ -185,10 +188,16 @@ class PlotterManager:
             pass
 
         for _, channel in self._inferiors:
-            channel.send_nonblocking(IPC_COMMAND_STOP)
+            try:
+                channel.send_nonblocking(IPC_COMMAND_STOP)
+            except Exception:
+                pass
 
         for proc, _ in self._inferiors:
-            proc.join(1)
+            try:
+                proc.join(1)
+            except Exception:
+                pass
 
         for proc, _ in self._inferiors:
             try:

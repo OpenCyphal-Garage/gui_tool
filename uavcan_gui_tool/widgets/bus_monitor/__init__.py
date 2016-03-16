@@ -96,7 +96,10 @@ class BusMonitorManager:
     def _frame_hook(self, direction, frame):
         for proc, channel in self._inferiors[:]:
             if proc.is_alive():
-                channel.send_nonblocking((direction, frame))
+                try:
+                    channel.send_nonblocking((direction, frame))
+                except Exception:
+                    logger.error('Failed to send data to process %r', proc, exc_info=True)
             else:
                 logger.info('Bus monitor process %r appears to be dead, removing', proc)
                 self._inferiors.remove((proc, channel))
@@ -123,10 +126,16 @@ class BusMonitorManager:
             pass
 
         for _, channel in self._inferiors:
-            channel.send_nonblocking(IPC_COMMAND_STOP)
+            try:
+                channel.send_nonblocking(IPC_COMMAND_STOP)
+            except Exception:
+                pass
 
         for proc, _ in self._inferiors:
-            proc.join(1)
+            try:
+                proc.join(1)
+            except Exception:
+                pass
 
         for proc, _ in self._inferiors:
             try:
