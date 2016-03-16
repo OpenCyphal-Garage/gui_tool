@@ -34,6 +34,7 @@ args = dict(
     install_requires=[
         'uavcan',
         'pyserial',
+        'qtawesome',
         'qtconsole',
         'numpy',
         'matplotlib',
@@ -106,23 +107,25 @@ if 'install_desktop' in sys.argv:
 # Windows-specific options
 #
 if os.name == 'nt':
+    # Injecting installation dependency ad-hoc
+    args.setdefault('setup_requires', []).append('cx_Freeze')
+
+if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
 
-    explicit_dependencies = [           # Importable modules, not PyPI package names
+    # cx_Freeze can't handle 3rd-party packages packed in .egg files, so we have to extract them for it
+    dependency_eggs_to_unpack = [
         'uavcan',
-        'serial',
-        'qtconsole',
-        'pyqtgraph',
+        'pyserial',
+        'qtawesome',
     ]
-
-    # cx_Freeze can't handle packages packed in .egg files, so we have to extract them for it
-    unpacked_eggs_dir = 'hatched_eggs'
+    unpacked_eggs_dir = os.path.join('build', 'hatched_eggs')
     sys.path.insert(0, unpacked_eggs_dir)
     try:
         shutil.rmtree(unpacked_eggs_dir)
     except Exception:
         pass
-    for dep in explicit_dependencies:
+    for dep in dependency_eggs_to_unpack:
         for egg in pkg_resources.require(dep):
             if not os.path.isdir(egg.location):
                 unpack_archive(egg.location, unpacked_eggs_dir)
@@ -130,27 +133,26 @@ if os.name == 'nt':
     # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
     args['options'] = {
         'build_exe': {
-            'packages': explicit_dependencies,
             'include_msvcr': True,
             'include_files': [],            # TODO: Do we need to list icons here?
         },
         'bdist_msi': {
-            'initial_target_dir': '[ProgramFilesFolder]\\UAVCAN\\' + PACKAGE_NAME,
+            'initial_target_dir': '[ProgramFilesFolder]\\UAVCAN\\' + HUMAN_FRIENDLY_NAME,
         },
     }
-    # Why is my life like that?
+    # Specifying icon= causes cx_Freeze to segfault! Why is my life like that?
+    # See http://stackoverflow.com/questions/18164354
     args['executables'] = [
         cx_Freeze.Executable(os.path.join('bin', PACKAGE_NAME),
                              base='Win32GUI',
-                             icon=ICON,
+                             #icon=ICON,
                              shortcutName=HUMAN_FRIENDLY_NAME,
                              shortcutDir='ProgramMenuFolder'),
     ]
     # Dispatching to cx_Freeze only if MSI build was requested expliclty. Otherwise continue with regular setup.
     # This is done in order to be able to install dependencies with regular setuptools.
     # TODO: This is probably not right.
-    if 'bdist_msi' in sys.argv:
-        setup = cx_Freeze.setup
+    setup = cx_Freeze.setup
 
 
 setup(**args)

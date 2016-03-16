@@ -37,7 +37,6 @@ Make sure that `python` can be invoked from the terminal; if it can't, check you
 Having done that, execute the following:
 
 ```dos
-python -m pip install cx_Freeze
 python setup.py install
 python setup.py bdist_msi
 ```
