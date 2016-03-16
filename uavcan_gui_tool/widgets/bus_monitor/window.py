@@ -117,8 +117,11 @@ class TimestampRenderer:
         return ts, col
 
     @staticmethod
-    def parse_timestamp(ts):
-        return datetime.datetime.strptime(ts, TimestampRenderer.FORMAT).timestamp()
+    def compute_timestamp_difference(earlier, later):
+        def s2delta(string):
+            h, m, s = [float(x) for x in string.split(':')]
+            return datetime.timedelta(hours=h, minutes=m, seconds=s)
+        return (s2delta(later) - s2delta(earlier)).total_seconds()
 
 
 class TrafficStatCounter:
@@ -346,8 +349,10 @@ class BusMonitorWindow(QMainWindow):
         if min_row == max_row:
             self._decode_transfer_at_row(min_row)
 
-        def get_row_ts(row):
-            return TimestampRenderer.parse_timestamp(self._log_widget.table.item(row, 1).text())
+        def get_ts_diff(row_earlier, row_later):
+            e = self._log_widget.table.item(row_earlier, 1).text()
+            l = self._log_widget.table.item(row_later, 1).text()
+            return TimestampRenderer.compute_timestamp_difference(e, l)
 
         def get_load_str(num_frames, dt):
             if dt >= 1e-6:
@@ -356,16 +361,12 @@ class BusMonitorWindow(QMainWindow):
 
         if min_row == max_row:
             num_frames = min_row
-            first_ts = get_row_ts(0)
-            current_ts = get_row_ts(min_row)
-            dt = current_ts - first_ts
+            dt = get_ts_diff(0, min_row)
             flash(self, '%d frames from beginning, %.3f sec since first frame, %s',
                   num_frames, dt, get_load_str(num_frames, dt))
         else:
             num_frames = max_row - min_row + 1
-            first_ts = get_row_ts(min_row)
-            last_ts = get_row_ts(max_row)
-            dt = last_ts - first_ts
+            dt = get_ts_diff(min_row, max_row)
             flash(self, '%d frames, timedelta %.6f sec, %s',
                   num_frames, dt, get_load_str(num_frames, dt))
 
