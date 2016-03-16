@@ -9,6 +9,7 @@
 import sys
 import logging
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QCheckBox
+from PyQt5.QtCore import QTimer
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,14 @@ class ConsoleManager:
         self._context = None
         self._window = None
 
+        if JUPYTER_AVAILABLE:
+            # This is sort of experimental. Initialization of a kernel manager takes some time,
+            # we don't want to do that in the main thread when the application is running. Do something about it.
+            try:
+                self._kernel_manager = self._get_kernel_manager()
+            except Exception:
+                logger.info('Could not initialize kernel manager', exc_info=True)
+
     # noinspection PyUnresolvedReferences
     def _get_context(self):
         # See http://ipython.readthedocs.org/en/stable/api/generated/IPython.core.interactiveshell.html
@@ -217,7 +226,11 @@ class ConsoleManager:
             self._window = JupyterConsoleWindow(parent, km, banner)
             self._window.on_close = on_close
 
-        self._window.show()
+        # TODO: Jupyter takes a long time to start up, which may sometimes interfere with the node. Fix it somehow.
+        # Here, by using the timer we can split the long start-up sequence into two shorter bursts, which kinda helps.
+        # Ideally, the node should be running in a dedicated thread.
+        # noinspection PyCallByClass,PyTypeChecker
+        QTimer.singleShot(50, self._window.show)
 
     def close(self):
         if self._window is not None:
