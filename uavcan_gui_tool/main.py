@@ -53,6 +53,8 @@ NODE_NAME = 'org.uavcan.gui_tool'
 
 
 class MainWindow(QMainWindow):
+    MAX_SUCCESSIVE_NODE_ERRORS = 1000
+
     def __init__(self, node, iface_name):
         # Parent
         super(MainWindow, self).__init__()
@@ -60,6 +62,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(get_app_icon())
 
         self._node = node
+        self._successive_node_errors = 0
         self._iface_name = iface_name
 
         self._active_data_type_detector = ActiveDataTypeDetector(self._node)
@@ -374,8 +377,22 @@ class MainWindow(QMainWindow):
         # This is not great, but at the moment seems like other options are even worse.
         try:
             self._node.spin(0)
+            self._successive_node_errors = 0
         except Exception as ex:
-            logger.error('Node spin error: %r', ex, exc_info=True)
+            self._successive_node_errors += 1
+
+            msg = 'Node spin error [%d of %d]: %r' % (self._successive_node_errors, self.MAX_SUCCESSIVE_NODE_ERRORS, ex)
+
+            if self._successive_node_errors >= self.MAX_SUCCESSIVE_NODE_ERRORS:
+                show_error('Node failure',
+                           'Local UAVCAN node has generated too many errors and will be terminated.\n'
+                           'Please restart the application.',
+                           msg, self)
+                self._node_spin_timer.stop()
+                self._node.close()
+
+            logger.error(msg, exc_info=True)
+            self.statusBar().showMessage(msg, 3000)
 
     def closeEvent(self, qcloseevent):
         self._plotter_manager.close()
