@@ -9,7 +9,7 @@
 import datetime
 import uavcan
 from . import BasicTable, get_monospace_font
-from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHeaderView
+from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHeaderView, QLabel
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from logging import getLogger
 
@@ -131,11 +131,21 @@ class NodeMonitorWidget(QGroupBox):
         self._node = node
         self.on_info_window_requested = lambda *_: None
 
+        self._status_update_timer = QTimer(self)
+        self._status_update_timer.setSingleShot(False)
+        self._status_update_timer.timeout.connect(self._update_status)
+        self._status_update_timer.start(500)
+
         self._table = NodeTable(self, node)
         self._table.info_requested.connect(self._show_info_window)
 
+        self._monitor_handle = self._table.monitor.add_update_handler(lambda _: self._update_status())
+
+        self._status_label = QLabel(self)
+
         vbox = QVBoxLayout(self)
         vbox.addWidget(self._table)
+        vbox.addWidget(self._status_label)
         self.setLayout(vbox)
 
     @property
@@ -144,6 +154,18 @@ class NodeMonitorWidget(QGroupBox):
 
     def close(self):
         self._table.close()
+        self._monitor_handle.remove()
+        self._status_update_timer.stop()
+
+    def _update_status(self):
+        if self._node.is_anonymous:
+            self._status_label.setText('Discovery is not possible - local node is configured in anonymous mode')
+        else:
+            num_undiscovered = len(list(self.monitor.find_all(lambda e: not e.discovered)))
+            if num_undiscovered > 0:
+                self._status_label.setText('Node discovery is in progress, %d left...' % num_undiscovered)
+            else:
+                self._status_label.setText('All nodes are discovered')
 
     def _show_info_window(self, node_id):
         self.on_info_window_requested(node_id)
