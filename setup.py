@@ -22,7 +22,8 @@ from version import __version__
 
 assert sys.version_info[0] == 3, 'Python 3 is required'
 
-ICON = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
+ICON_HIRES = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
+ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
 
 #
 # Setup args common for all targets
@@ -51,7 +52,7 @@ args = dict(
         ]
     },
     data_files=[
-        ('', [ICON]),           # This icon will be used by the application itself, not by DE etc.
+        ('', [ICON_HIRES]),           # This icon will be used by the application itself, not by DE etc.
     ],
 
     # Meta fields, they have no technical meaning
@@ -145,7 +146,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     args['executables'] = [
         cx_Freeze.Executable(os.path.join('bin', PACKAGE_NAME),
                              base='Win32GUI',
-                             #icon=ICON,
+                             icon=ICON_ICO,
                              shortcutName=HUMAN_FRIENDLY_NAME,
                              shortcutDir='ProgramMenuFolder'),
     ]
