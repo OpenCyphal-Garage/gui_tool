@@ -392,10 +392,10 @@ def main():
         try:
             iface, iface_kwargs = run_iface_config_window(get_app_icon())
             if not iface:
-                exit(0)
+                sys.exit(0)
         except Exception as ex:
             show_error('Fatal error', 'Could not list available interfaces', ex)
-            exit(1)
+            sys.exit(1)
 
         # Trying to start the node on the specified interface
         try:
@@ -424,4 +424,4 @@ def main():
 
     node.close()
 
-    exit(exit_code)
+    sys.exit(exit_code)
