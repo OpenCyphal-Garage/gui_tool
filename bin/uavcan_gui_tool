@@ -13,15 +13,18 @@ import sys
 #
 # This shim enables us to run directly from the source directory not having the package installed.
 #
-directory = os.path.dirname(os.path.abspath(__file__))
-if 'gui_tool' in directory:
-    print('Running from the source directory')
-    for dirpath, dirnames, filenames in os.walk(os.path.join(directory, '..')):
-        for d in dirnames:
-            if '.' not in d and 'bin' not in d:
-                sys.path.insert(0, os.path.abspath(os.path.join(directory, '..', d)))
-        break
-    sys.path.insert(0, os.path.abspath(os.path.join(directory, '..')))
+try:
+    directory = os.path.dirname(os.path.abspath(__file__))
+    if 'gui_tool' in directory:
+        print('Running from the source directory')
+        for dirpath, dirnames, filenames in os.walk(os.path.join(directory, '..')):
+            for d in dirnames:
+                if '.' not in d and 'bin' not in d:
+                    sys.path.insert(0, os.path.abspath(os.path.join(directory, '..', d)))
+            break
+        sys.path.insert(0, os.path.abspath(os.path.join(directory, '..')))
+except NameError:
+    pass                # Seems like we're running in cx_Feeze environment
 
 #
 # Calling main directly.
