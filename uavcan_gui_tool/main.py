@@ -89,6 +89,16 @@ class MainWindow(QMainWindow):
         self._console_manager = ConsoleManager(self._make_console_context)
 
         #
+        # File menu
+        #
+        quit_action = QAction(get_icon('sign-out'), '&Quit', self)
+        quit_action.setShortcut(QKeySequence('Ctrl+Shift+Q'))
+        quit_action.triggered.connect(self.close)
+
+        file_menu = self.menuBar().addMenu('&File')
+        file_menu.addAction(quit_action)
+
+        #
         # Tools menu
         #
         show_bus_monitor_action = QAction(get_icon('bus'), '&Bus Monitor', self)
