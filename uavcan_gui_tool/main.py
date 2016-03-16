@@ -67,12 +67,6 @@ class MainWindow(QMainWindow):
 
         self._active_data_type_detector = ActiveDataTypeDetector(self._node)
 
-        self._plotter_manager = PlotterManager(self._node)
-
-        self._console_manager = ConsoleManager(self._make_console_context)
-
-        self._bus_monitor_manager = BusMonitorManager(self._node, iface_name)
-
         self._node_spin_timer = QTimer(self)
         self._node_spin_timer.timeout.connect(self._spin_node)
         self._node_spin_timer.setSingleShot(False)
@@ -88,6 +82,11 @@ class MainWindow(QMainWindow):
         self._dynamic_node_id_allocation_widget = DynamicNodeIDAllocatorWidget(self, node,
                                                                                self._node_monitor_widget.monitor)
         self._file_server_widget = FileServerWidget(self, node)
+
+        self._plotter_manager = PlotterManager(self._node)
+        self._bus_monitor_manager = BusMonitorManager(self._node, iface_name)
+        # Console manager depends on other stuff via context, initialize it last
+        self._console_manager = ConsoleManager(self._make_console_context)
 
         #
         # Tools menu
