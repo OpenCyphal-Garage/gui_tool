@@ -9,6 +9,7 @@
 
 import os
 import sys
+import multiprocessing
 
 #
 # This shim enables us to run directly from the source directory not having the package installed.
@@ -24,7 +25,7 @@ try:
             break
         sys.path.insert(0, os.path.abspath(os.path.join(directory, '..')))
 except NameError:
-    pass                # Seems like we're running in cx_Feeze environment
+    pass                # Seems like we're running in cx_Freeze environment
 
 #
 # Calling main directly.
@@ -32,5 +33,6 @@ except NameError:
 # to the Python docs for more info.
 #
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     from uavcan_gui_tool.main import main
     main()
