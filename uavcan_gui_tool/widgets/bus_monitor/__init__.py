@@ -82,7 +82,7 @@ def _process_entry_point(channel, iface_name):
     win.show()
 
     logger.info('Bus monitor process %r initialized successfully, now starting the event loop', os.getpid())
-    exit(app.exec_())
+    sys.exit(app.exec_())
 
 
 # TODO: Duplicates PlotterManager; refactor into an abstract process factory

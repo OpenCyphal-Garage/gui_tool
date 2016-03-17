@@ -83,7 +83,7 @@ def _process_entry_point(channel):
     win.show()
 
     logger.info('Plotter process %r initialized successfully, now starting the event loop', os.getpid())
-    exit(app.exec_())
+    sys.exit(app.exec_())
 
 
 class CompactMessage:
