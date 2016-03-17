@@ -34,9 +34,9 @@ args = dict(
     packages=find_packages(),
     install_requires=[
         'uavcan>=1.0.0.dev11',
-        'pyserial',
-        'qtawesome',
-        'qtconsole',
+        'pyserial>=2.6',
+        'qtawesome>=0.2.0',
+        'qtconsole>=4.2.0',
         'numpy',
         'matplotlib',
         'pyqtgraph>=0.9.10',
