@@ -57,7 +57,7 @@ args = dict(
 
     # Meta fields, they have no technical meaning
     description='UAVCAN bus management and diagnostics app',
-    author='Pavel Kirienko',
+    author='UAVCAN Development Team',
     author_email='uavcan@googlegroups.com',
     url='http://uavcan.org',
     license='MIT',
