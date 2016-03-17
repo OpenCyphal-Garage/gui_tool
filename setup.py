@@ -117,8 +117,6 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     # cx_Freeze can't handle 3rd-party packages packed in .egg files, so we have to extract them for it
     dependency_eggs_to_unpack = [
         'uavcan',
-        'pyserial',
-        'qtawesome',
     ]
     unpacked_eggs_dir = os.path.join('build', 'hatched_eggs')
     sys.path.insert(0, unpacked_eggs_dir)
@@ -131,6 +129,8 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
             if not os.path.isdir(egg.location):
                 unpack_archive(egg.location, unpacked_eggs_dir)
 
+    import qtawesome
+
     # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
     args['options'] = {
         'build_exe': {
@@ -141,6 +141,8 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 # Despite the fact that Pyuavcan is included as data, we still need cx_Freeze to analyze its
                 # dependencies, so we don't exclude it explicilty.
                 os.path.join(unpacked_eggs_dir, 'uavcan'),
+                # QtAwesome needs its data files as well.
+                os.path.join(unpacked_eggs_dir, os.path.dirname(qtawesome.__file__)),
                 # Same thing goes with the main package - we want its directory structure untouched, so we include
                 # it as data, too.
                 PACKAGE_NAME,
