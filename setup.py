@@ -117,6 +117,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     # cx_Freeze can't handle 3rd-party packages packed in .egg files, so we have to extract them for it
     dependency_eggs_to_unpack = [
         'uavcan',
+        'qtpy',
     ]
     unpacked_eggs_dir = os.path.join('build', 'hatched_eggs')
     sys.path.insert(0, unpacked_eggs_dir)
