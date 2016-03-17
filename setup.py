@@ -118,6 +118,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     dependency_eggs_to_unpack = [
         'uavcan',
         'qtpy',
+        'qtconsole',
     ]
     unpacked_eggs_dir = os.path.join('build', 'hatched_eggs')
     sys.path.insert(0, unpacked_eggs_dir)
@@ -131,10 +132,19 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 unpack_archive(egg.location, unpacked_eggs_dir)
 
     import qtawesome
+    import qtconsole
+    import PyQt5
+    import zmq
+    import pygments
 
     # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
     args['options'] = {
         'build_exe': {
+            'packages': [
+                'zmq',
+                'pygments',
+                'jupyter_client',
+            ],
             'include_msvcr': True,
             'include_files': [
                 # cx_Freeze doesn't respect the DSDL definition files that are embedded into the package,
@@ -142,11 +152,15 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 # Despite the fact that Pyuavcan is included as data, we still need cx_Freeze to analyze its
                 # dependencies, so we don't exclude it explicilty.
                 os.path.join(unpacked_eggs_dir, 'uavcan'),
-                # QtAwesome needs its data files as well.
-                os.path.join(unpacked_eggs_dir, os.path.dirname(qtawesome.__file__)),
                 # Same thing goes with the main package - we want its directory structure untouched, so we include
                 # it as data, too.
                 PACKAGE_NAME,
+                # These packages don't work properly when packed in .zip, so here we have another bunch of ugly hacks
+                os.path.join(unpacked_eggs_dir, os.path.dirname(PyQt5.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(qtawesome.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(qtconsole.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(zmq.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(pygments.__file__)),
             ],
         },
         'bdist_msi': {
