@@ -33,7 +33,7 @@ args = dict(
     version='.'.join(map(str, __version__)),
     packages=find_packages(),
     install_requires=[
-        'uavcan',
+        'uavcan>=1.0.0.dev11',
         'pyserial',
         'qtawesome',
         'qtconsole',
