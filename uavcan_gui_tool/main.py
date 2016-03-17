@@ -47,6 +47,7 @@ from .widgets.node_properties import NodePropertiesWindow
 from .widgets.console import ConsoleManager, InternalObjectDescriptor
 from .widgets.subscriber import SubscriberWindow
 from .widgets.plotter import PlotterManager
+from .widgets.about_window import AboutWindow
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -135,7 +136,7 @@ class MainWindow(QMainWindow):
         uavcan_website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('http://uavcan.org')))
 
         about_action = QAction(get_icon('info'), '&About', self)
-        about_action.triggered.connect(self._show_about_window)
+        about_action.triggered.connect(lambda: AboutWindow(self).show())
 
         help_menu = self.menuBar().addMenu('&Help')
         help_menu.addAction(uavcan_website_action)
@@ -388,15 +389,6 @@ class MainWindow(QMainWindow):
                                  self._node_monitor_widget.monitor, self._dynamic_node_id_allocation_widget)
         w.show()
         self._node_windows[node_id] = w
-
-    def _show_about_window(self):
-        version_str = '.'.join(map(str, __version__))
-        text = '\n\n'.join([
-            'UAVCAN GUI Tool version %s.' % version_str,
-            'This application is distributed under the terms of the MIT license.',
-            'TODO: Add information about dependencies and their licenses.'
-        ])
-        QMessageBox().about(self, 'About UAVCAN GUI Tool', text)
 
     def _spin_node(self):
         # We're running the node in the GUI thread.

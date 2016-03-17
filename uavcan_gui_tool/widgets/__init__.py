@@ -630,7 +630,7 @@ def get_app_icon():
         pass
     # noinspection PyBroadException
     try:
-        fn = pkg_resources.resource_filename('uavcan_gui_tool', os.path.join('icons', 'icon_256x256.png'))
+        fn = pkg_resources.resource_filename('uavcan_gui_tool', os.path.join('icons', 'logo_256x256.png'))
         _APP_ICON_OBJECT = QIcon(fn)
     except Exception:
         logger.error('Could not load icon', exc_info=True)
