@@ -8,27 +8,47 @@
 
 import logging
 import multiprocessing
+import os
 import sys
 import time
+import tempfile
 
 assert sys.version[0] == '3'
 
-# TODO: add rotating file logger
-# TODO: add a startup option that enables logging of DEBUG log entries
-logging.basicConfig(stream=sys.stderr, level=logging.INFO,
-                    format='%(asctime)s %(levelname)-8s %(name)-25s %(message)s')
+#
+# Configuring logging before other packages are imported
+#
+if '--debug' in sys.argv:
+    sys.argv.remove('--debug')
+    logging_level = logging.DEBUG
+else:
+    logging_level = logging.INFO
+
+logging.basicConfig(stream=sys.stderr, level=logging_level,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+
+log_file = tempfile.NamedTemporaryFile(mode='w', prefix='uavcan_gui_tool-', suffix='.log', delete=False)
+file_handler = logging.FileHandler(log_file.name)
+file_handler.setLevel(logging_level)
+file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-25s %(message)s'))
+logging.root.addHandler(file_handler)
 
 logger = logging.getLogger(__name__.replace('__', ''))
 
+#
+# Configuring multiprocessing.
 # Start method must be configured globally, and only once. Using 'spawn' ensures full compatibility with Windoze.
 # We need to check first if the start mode is already configured, because this code will be re-run for every child.
+#
 if multiprocessing.get_start_method(True) != 'spawn':
     multiprocessing.set_start_method('spawn')
 
+#
 # Importing other stuff once the logging has been configured
+#
 import uavcan
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
 from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtCore import QTimer, Qt, QUrl
 
@@ -56,6 +76,7 @@ NODE_NAME = 'org.uavcan.gui_tool'
 class MainWindow(QMainWindow):
     MAX_SUCCESSIVE_NODE_ERRORS = 1000
 
+    # noinspection PyTypeChecker,PyCallByClass,PyUnresolvedReferences
     def __init__(self, node, iface_name):
         # Parent
         super(MainWindow, self).__init__()
@@ -132,14 +153,19 @@ class MainWindow(QMainWindow):
         #
         # Help menu
         #
-        uavcan_website_action = QAction(get_icon('globe'), 'UAVCAN &Website', self)
+        uavcan_website_action = QAction(get_icon('globe'), 'Open UAVCAN &Website', self)
         uavcan_website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('http://uavcan.org')))
+
+        show_log_directory_action = QAction(get_icon('pencil-square-o'), 'Open &Log Directory', self)
+        show_log_directory_action.triggered.connect(
+            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(log_file.name))))
 
         about_action = QAction(get_icon('info'), '&About', self)
         about_action.triggered.connect(lambda: AboutWindow(self).show())
 
         help_menu = self.menuBar().addMenu('&Help')
         help_menu.addAction(uavcan_website_action)
+        help_menu.addAction(show_log_directory_action)
         help_menu.addAction(about_action)
 
         #
@@ -420,6 +446,7 @@ class MainWindow(QMainWindow):
 
 
 def main():
+    logger.info('Starting the application')
     app = QApplication(sys.argv)
 
     while True:
@@ -452,9 +479,11 @@ def main():
         else:
             break
 
+    logger.info('Creating main window; iface %r', iface)
     window = MainWindow(node, iface)
     window.show()
 
+    logger.info('Init complete, invoking the Qt event loop')
     exit_code = app.exec_()
 
     node.close()
