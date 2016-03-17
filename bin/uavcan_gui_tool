@@ -12,6 +12,29 @@ import sys
 import multiprocessing
 
 #
+# When frozen, stdout/stderr are None, causing nasty exceptions. This workaround silences them.
+#
+class SupermassiveBlackHole:
+    def write(self, *_):
+        pass
+
+    def read(self, *_):
+        pass
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass
+try:
+    sys.stdout.flush()
+    sys.stderr.flush()
+except AttributeError:
+    sys.__stdout__ = sys.stdout = SupermassiveBlackHole()
+    sys.__stderr__ = sys.stderr = SupermassiveBlackHole()
+    sys.__stdin__  = sys.stdin  = SupermassiveBlackHole()
+
+#
 # This shim enables us to run directly from the source directory not having the package installed.
 #
 try:
