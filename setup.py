@@ -35,7 +35,7 @@ args = dict(
     install_requires=[
         'uavcan>=1.0.0.dev11',
         'pyserial>=2.6',
-        'qtawesome>=0.2.0',
+        'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'numpy',
         'matplotlib',
