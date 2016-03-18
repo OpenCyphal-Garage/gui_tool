@@ -113,6 +113,10 @@ def run_iface_config_window(icon):
                 return
         kwargs['bitrate'] = int(bitrate.value())
         result_key = str(combo.currentText()).strip()
+        if not result_key:
+            show_error('Invalid parameters', 'Interface name cannot be empty', 'Please select a valid interface',
+                       parent=win)
+            return
         try:
             result = ifaces[result_key]
         except KeyError:
