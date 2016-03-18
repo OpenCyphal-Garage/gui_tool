@@ -145,6 +145,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     args['options'] = {
         'build_exe': {
             'packages': [
+                'pkg_resources',
                 'zmq',
                 'pygments',
                 'jupyter_client',
