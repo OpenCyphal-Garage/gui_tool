@@ -11,6 +11,7 @@ import os
 import sys
 import shutil
 import pkg_resources
+import glob
 from setuptools import setup, find_packages
 from setuptools.archive_util import unpack_archive
 
@@ -144,6 +145,11 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import ipykernel
     import jupyter_client
     import traitlets
+    import numpy
+
+    # Oh, Windows, never change.
+    missing_dlls = glob.glob(os.path.join(os.path.dirname(numpy.core.__file__), '*.dll'))
+    print('Missing DLL:', missing_dlls)
 
     # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
     args['options'] = {
@@ -174,7 +180,8 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 os.path.join(unpacked_eggs_dir, os.path.dirname(ipykernel.__file__)),
                 os.path.join(unpacked_eggs_dir, os.path.dirname(jupyter_client.__file__)),
                 os.path.join(unpacked_eggs_dir, os.path.dirname(traitlets.__file__)),
-            ],
+                os.path.join(unpacked_eggs_dir, os.path.dirname(numpy.__file__)),
+            ] + missing_dlls,
         },
         'bdist_msi': {
             'initial_target_dir': '[ProgramFilesFolder]\\UAVCAN\\' + HUMAN_FRIENDLY_NAME,
