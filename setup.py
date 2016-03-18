@@ -140,6 +140,10 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import PyQt5
     import zmq
     import pygments
+    import IPython
+    import ipykernel
+    import jupyter_client
+    import traitlets
 
     # My reverence for you, I hope, will help control my inborn instability; we are accustomed to a zigzag way of life.
     args['options'] = {
@@ -166,6 +170,10 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 os.path.join(unpacked_eggs_dir, os.path.dirname(qtconsole.__file__)),
                 os.path.join(unpacked_eggs_dir, os.path.dirname(zmq.__file__)),
                 os.path.join(unpacked_eggs_dir, os.path.dirname(pygments.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(IPython.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(ipykernel.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(jupyter_client.__file__)),
+                os.path.join(unpacked_eggs_dir, os.path.dirname(traitlets.__file__)),
             ],
         },
         'bdist_msi': {
