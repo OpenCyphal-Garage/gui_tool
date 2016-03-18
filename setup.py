@@ -78,9 +78,13 @@ args = dict(
 #
 # Handling additional features for a Freedesktop-compatible OS
 #
-if 'install_desktop' in sys.argv:
-    # Injecting installation dependency ad-hoc
+if sys.platform.startswith('linux') and ('install' in sys.argv):
+    print('Freedesktop components will be installed')
+
+    # Delegating the desktop integration work to 'install_freedesktop'
     args.setdefault('setup_requires', []).append('install_freedesktop')
+    if 'install_desktop' not in sys.argv:
+        sys.argv.append('install_desktop')
 
     # Resolving icon installation path (standard for Freedesktop)
     icon_installation_path = os.path.join(sys.prefix, 'share/icons/hicolor/256x256/apps', PACKAGE_NAME + '.png')
@@ -102,7 +106,7 @@ if 'install_desktop' in sys.argv:
         shutil.rmtree(icon_installation_path)
     except Exception:
         pass
-    shutil.copy(ICON, icon_installation_path)
+    shutil.copy(ICON_HIRES, icon_installation_path)
 
 #
 # Windows-specific options
