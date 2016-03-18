@@ -52,7 +52,7 @@ args = dict(
         ]
     },
     data_files=[
-        ('', [ICON_HIRES]),           # This icon will be used by the application itself, not by DE etc.
+        (os.path.dirname(ICON_HIRES), [ICON_HIRES]),  # This icon will be used by the application itself, not by DE etc.
     ],
 
     # Meta fields, they have no technical meaning
