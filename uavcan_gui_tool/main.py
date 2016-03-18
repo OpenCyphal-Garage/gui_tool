@@ -30,10 +30,11 @@ logging.basicConfig(stream=sys.stderr, level=logging_level,
 log_file = tempfile.NamedTemporaryFile(mode='w', prefix='uavcan_gui_tool-', suffix='.log', delete=False)
 file_handler = logging.FileHandler(log_file.name)
 file_handler.setLevel(logging_level)
-file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(name)-25s %(message)s'))
+file_handler.setFormatter(logging.Formatter('%(asctime)s [%(process)d] %(levelname)-8s %(name)-25s %(message)s'))
 logging.root.addHandler(file_handler)
 
 logger = logging.getLogger(__name__.replace('__', ''))
+logger.info('Spawned')
 
 #
 # Configuring multiprocessing.
