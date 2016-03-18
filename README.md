@@ -15,7 +15,9 @@ The general approach is simple:
 2. Install the application itself via `./setup.py install`.
 
 Once the application is installed, you should see the new desktop entries available in your desktop menu;
-also a new executable will be available in your `PATH`: `uavcan_gui_tool`.
+also a new executable `uavcan_gui_tool` will be available in your `PATH`.
+If your desktop environment doesn't update the menu automatically, you may want to do it manually, e.g.
+by invoking `sudo update-desktop-database` (command depends on the distribution).
 
 ### Debian-based distributions
 
