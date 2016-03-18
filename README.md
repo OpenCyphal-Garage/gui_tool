@@ -30,7 +30,12 @@ sudo ./setup.py install
 
 ## Installing on Windows
 
-These instructions are for developers only. End users should use pre-built MSI packages.
+In order to install this application,
+**download and install the latest `.msi` package from here: <https://files.zubax.com/products/org.uavcan.gui_tool/>**.
+
+### Building the MSI package
+
+These instructions are for developers only. End users should use pre-built MSI packages (see the link above).
 
 First, install [WinPython 3.4 or newer, pre-packaged with PyQt5](http://winpython.github.io/).
 Make sure that `python` can be invoked from the terminal; if it can't, check your `PATH`.
@@ -40,6 +45,8 @@ Having done that, execute the following:
 python setup.py install
 python setup.py bdist_msi
 ```
+
+Collect the resulting MSI from `dist/`.
 
 ## Installing on OSX
 
