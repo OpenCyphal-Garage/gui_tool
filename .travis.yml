@@ -1,15 +1,15 @@
 sudo: false
 language: python
 python:
-  - "3.4"
-  - "3.5"
+- '3.4'
+- '3.5'
 install: pip3 install .
 script: echo Doing nothing
 deploy:
   provider: pypi
   user: uavcan
   password:
-    secure: ikyq1z79JCE6ARRAHCykX75XSvUvqIoFA2bwb6GAk2yhn/GmAWTW8V114Xpi/dtD9BRCPo3nhyUyzcUutzovmKhnbjdj2+iEbenZd1j8vckRzanOiVniQeEPbAr/lQX46T+S1U1krAgfWfzg+x0sX6+grYQjVJwWDO+ueJrSBTjx1hjgBYl6hu5WJLladQ5kIfjEx29s2eFo6LzCuQ15fCSGojGlAsVZ6VjYBnxMRgRhNXAJmbBJ1F5+hIvpS5LrsP4oUUjpzM9MvSmD3fVoByxrJedAT2KbIP2vH7v7puVP03IF823KjHL0SRS6DLFo/bxTReW0Nd4i0KUdlVAm3WOkQOLMgM3G0tEwW+wO/o/LNgqXtdAFpEOIkzJOBBbT+IW8WX+38/LwYobZ+4DQldHCAfOylK9g/znDQQsye8HAVSA5Gu1IHAAHgbJlstODFQoxUqDZv5l3Qd6vksjwhumF2hIayAJMsKEtgefBMVi8vI0Mv3nSIT01rGGMpf/WemSnesm0UNs3zOiNzkNW235i08Jo/ugoFoiETQcPIXh9PhVkO+FFagtzIqlsIqhP/70Jif8aPdeLwi1lbwdB90jsU1cEIrfBchmUzwWJn42lr/RYY+979Bk91/69EaqyO8h8YKXyQeUNEeFWI/w+OpaAELV8IAhNUEhf7pOOHkc=
+    secure: kVFhfNM/2tv4gSID97npYjzrsiTLxMJQzVz265gQGz/8b2zIe36GO63bGfu5mlHFCZaTc7KS/6bOHicP+I1ePHKBVaevgac6Gkr+rtQWSL0KGAqkEar8E6QhdwUURRiwzjf/dHAfgdbN4nqC0TLitROi0W0J0zMjojDwdV5/RV0WGlhOHMMr8yotEAb+lch2cTdIIgkjowSs2In4U/VlAPABtbL6VMTm32kobhK7BknJWoL+FpIxg4T+itXwov/wYEIfGdKqLZGEBojoBE4ucwwiTJ2WnyeNprVLEcbCLtUqXFeVNXam1caByxb1h8NSIaE0q1bLfNwgU8wTmILVpvOKPiAAThMiTTaUkJ6qcn97EtZjWVx3VcXhy6RwSskutSDEZHLxZPuNDwR3dlAqFGYufM0HMMlV5onGona2zGNyjjpXl1oHpiIEz4v4HUWrvzzd3Dj6lbptf2SUpkPljz5ukd4WbzsVlWgAffFSVzs46vIJiK3W7tfBPKQieB6VJSOIRMzHWoGf3p3yX60RuGJ/cosAHvr0nY7nF9JgQazX1UOsxwAj438jiqy4YP8PZBptchGh9fRoA7+kiVCszWHrvnPuPzuGJanSN5b4GMeTJcBrTWrmJt64MzVPSszCsVAwqTazlzXp5/QyV4c8rTvPoduZQt0Dt3hRLPUtmJ8=
   on:
     tags: true
     repo: UAVCAN/gui_tool
