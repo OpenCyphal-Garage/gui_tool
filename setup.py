@@ -110,6 +110,10 @@ if sys.platform.startswith('linux') and ('install' in sys.argv):
         shutil.rmtree(icon_installation_path)
     except Exception:
         pass
+    try:
+        os.makedirs(os.path.dirname(icon_installation_path))
+    except Exception:
+        pass
     shutil.copy(ICON_HIRES, icon_installation_path)
 
 #
