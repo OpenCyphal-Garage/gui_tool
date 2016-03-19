@@ -37,6 +37,11 @@ logger = logging.getLogger(__name__.replace('__', ''))
 logger.info('Spawned')
 
 #
+# Applying Windows-specific hacks
+#
+os.environ['PATH'] = os.environ['PATH'] + ';' + os.path.dirname(sys.executable)  # Otherwise it fails to load on Win 10
+
+#
 # Configuring multiprocessing.
 # Start method must be configured globally, and only once. Using 'spawn' ensures full compatibility with Windoze.
 # We need to check first if the start mode is already configured, because this code will be re-run for every child.
