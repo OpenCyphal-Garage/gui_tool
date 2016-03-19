@@ -1,6 +1,8 @@
 UAVCAN GUI Tool
 ===============
 
+[![Travis CI](https://travis-ci.org/UAVCAN/gui_tool.svg?branch=master)](https://travis-ci.org/UAVCAN/gui_tool)
+[![PyPi](https://img.shields.io/pypi/dm/uavcan_gui_tool.svg)](https://pypi.python.org/pypi/uavcan_gui_tool)
 [![Gitter](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/UAVCAN/general)
 
 UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN bus management and diagnostics.
