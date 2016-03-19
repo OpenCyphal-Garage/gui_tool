@@ -9,4 +9,4 @@
 #
 # For the rationale refer to http://stackoverflow.com/questions/458550
 #
-__version__ = 0, 1
+__version__ = 0, 2
