@@ -16,7 +16,7 @@ The general approach is simple:
 
 It also may be necessary to install additional dependencies, depending on your distribution (see details below).
 
-Once the application is installed, you should see the new desktop entries available in your desktop menu;
+Once the application is installed, you should see new desktop entries available in your desktop menu;
 also a new executable `uavcan_gui_tool` will be available in your `PATH`.
 If your desktop environment doesn't update the menu automatically, you may want to do it manually, e.g.
 by invoking `sudo update-desktop-database` (command depends on the distribution).
