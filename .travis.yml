@@ -4,6 +4,7 @@ python:
   - "3.4"
   - "3.5"
 install: pip3 install .
+script: echo Doing nothing
 deploy:
   provider: pypi
   user: uavcan
