@@ -279,17 +279,16 @@ class BusMonitorWindow(QMainWindow):
         self._bus_load_samples = [], []
         self._started_at_mono = time.monotonic()
 
-        footer_splitter = QSplitter(Qt.Horizontal, self)
-        footer_splitter.addWidget(self._decoded_message_box)
+        self._footer_splitter = QSplitter(Qt.Horizontal, self)
+        self._footer_splitter.addWidget(self._decoded_message_box)
         self._decoded_message_box.setMinimumWidth(400)
-        footer_splitter.addWidget(self._load_plot)
+        self._footer_splitter.addWidget(self._load_plot)
         self._load_plot.setMinimumWidth(200)
-        self._load_plot.setMaximumHeight(300)
 
         splitter = QSplitter(Qt.Vertical, self)
         splitter.addWidget(self._log_widget)
         self._log_widget.setMinimumHeight(200)
-        splitter.addWidget(footer_splitter)
+        splitter.addWidget(self._footer_splitter)
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
@@ -299,6 +298,15 @@ class BusMonitorWindow(QMainWindow):
         self.setCentralWidget(widget)
         self.setMinimumWidth(700)
         self.resize(800, 600)
+        self._update_widget_sizes()
+
+    def _update_widget_sizes(self):
+        max_footer_height = self.centralWidget().height() * 0.4
+        self._footer_splitter.setMaximumHeight(max_footer_height)
+
+    def resizeEvent(self, qresizeevent):
+        super(BusMonitorWindow, self).resizeEvent(qresizeevent)
+        self._update_widget_sizes()
 
     def _update_stat(self):
         bus_load, ts_mono = self._traffic_stat.get_frames_per_second()
