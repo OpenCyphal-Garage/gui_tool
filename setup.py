@@ -33,13 +33,16 @@ args = dict(
     name=PACKAGE_NAME,
     version='.'.join(map(str, __version__)),
     packages=find_packages(),
+    setup_requires=[
+        'setuptools',
+    ],
     install_requires=[
+        'setuptools',
         'uavcan>=1.0.0.dev11',
         'pyserial>=2.6',
         'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'numpy',
-        'matplotlib',
         'pyqtgraph>=0.9.10',
     ],
     dependency_links=[
@@ -94,7 +97,7 @@ if sys.platform.startswith('linux') and ('install' in sys.argv):
     args['desktop_entries'] = {
         PACKAGE_NAME: {
             'Name': HUMAN_FRIENDLY_NAME,
-            'GenericName': 'CAN Bus Diagnostics Tool',
+            'GenericName': args['description'],
             'Comment': args['description'],
             'Categories': 'Development;Utility;',
             'Icon': icon_installation_path,
