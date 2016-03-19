@@ -18,7 +18,8 @@ from PyQt5.QtGui import QColor, QIcon, QTextOption
 from PyQt5.QtCore import Qt, QTimer
 from pyqtgraph import PlotWidget, mkPen
 from logging import getLogger
-from .. import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash, get_app_icon
+from .. import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash, get_app_icon, \
+    show_error
 from .transfer_decoder import decode_transfer_from_frame
 
 
@@ -287,7 +288,7 @@ class BusMonitorWindow(QMainWindow):
 
         splitter = QSplitter(Qt.Vertical, self)
         splitter.addWidget(self._log_widget)
-        self._log_widget.setMinimumHeight(300)
+        self._log_widget.setMinimumHeight(200)
         splitter.addWidget(footer_splitter)
 
         widget = QWidget(self)
@@ -381,8 +382,12 @@ class BusMonitorWindow(QMainWindow):
             menu.popup(self._log_widget.table.mapToGlobal(pos))
 
     def _show_data_type_definition(self, row):
-        data_type_name = self._log_widget.table.item(row, self._log_widget.table.columnCount() - 1).text()
-        definition = uavcan.TYPENAMES[data_type_name].source_text
+        try:
+            data_type_name = self._log_widget.table.item(row, self._log_widget.table.columnCount() - 1).text()
+            definition = uavcan.TYPENAMES[data_type_name].source_text
+        except Exception as ex:
+            show_error('Data type lookup error', 'Could not load data type definition', ex, self)
+            return
 
         win = QDialog(self)
         view = QPlainTextEdit(win)
