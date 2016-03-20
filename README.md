@@ -72,3 +72,21 @@ Collect the resulting MSI from `dist/`.
 ## Installing on OSX
 
 ***MAINTAINERS WANTED***
+
+## Development
+
+### Releasing new version
+
+First, deploy the new version to PyPI. In order to do that, perform the following steps:
+
+1. Update the version tuple in `version.py`, e.g. `1, 0`.
+2. Create a new tag with the same version number, e.g. `git tag -a 1.0 -m v1.0`.
+3. Push to master: `git push && git push --tags`
+
+Then, build a Windows MSI package using the instructions above, and upload the resulting MSI to
+the distribution server.
+
+### Code style
+
+The code should be formatted in compliance with [PEP8](https://www.python.org/dev/peps/pep-0008/),
+with one exception: line length must not exceed 120 characters (PEP8 requires 79).
