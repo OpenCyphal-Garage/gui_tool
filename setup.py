@@ -12,6 +12,7 @@ import sys
 import shutil
 import pkg_resources
 import glob
+import subprocess
 from setuptools import setup, find_packages
 from setuptools.archive_util import unpack_archive
 
@@ -119,6 +120,15 @@ if sys.platform.startswith('linux') and ('install' in sys.argv):
 #
 # Windows-specific options
 #
+WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
+
+def get_windows_signtool_path():
+    # TODO: Search for signtool properly
+    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
+    if os.path.isfile(p):
+        return p
+    raise RuntimeError('signtool.exe not found')
+
 if os.name == 'nt':
     # Injecting installation dependency ad-hoc
     args.setdefault('setup_requires', []).append('cx_Freeze')
@@ -204,7 +214,47 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     # Dispatching to cx_Freeze only if MSI build was requested explicitly. Otherwise continue with regular setup.
     # This is done in order to be able to install dependencies with regular setuptools.
     # TODO: This is probably not right.
-    setup = cx_Freeze.setup
+    def setup(*args, **kwargs):
+        # Checking preconditions and such
+        signtool_path = get_windows_signtool_path()
+        print('Using this signtool:', signtool_path)
 
+        pfx_path = glob.glob(os.path.join('..', '*.pfx'))
+        if len(pfx_path) != 1:
+            raise RuntimeError('Expected to find exactly one PFX in the outer dir, found this: %r' % pfx_path)
+        pfx_path = pfx_path[0]
+        print('Using this certificate:', pfx_path)
+
+        pfx_password = input('Enter password to read the certificate file: ').strip()
+
+        # Freezing
+        cx_Freeze.setup(*args, **kwargs)
+
+        # Code signing the outputs
+        print('Signing the outputs...')
+        for out in glob.glob(os.path.join('dist', '*.msi')):
+            out_copy = '.signed.'.join(out.rsplit('.', 1))
+            try:
+                shutil.rmtree(out_copy)
+            except Exception:
+                pass
+            shutil.copy(out, out_copy)
+            print('Signing file:', out_copy)
+            while True:
+                try:
+                    subprocess.check_call([signtool_path, 'sign',
+                                           '/f', pfx_path,
+                                           '/p', pfx_password,
+                                           '/t', WINDOWS_SIGNATURE_TIMESTAMPING_SERVER,
+                                           out_copy])
+                except Exception as ex:
+                    print('SignTool failed:', ex)
+                    if input('Try again? y/[n] ').lower().strip()[0] == 'y':
+                        pass
+                    else:
+                        raise
+                else:
+                    break
+        print('All files were signed successfully')
 
 setup(**args)
