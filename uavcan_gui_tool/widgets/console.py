@@ -22,7 +22,7 @@ try:
     JUPYTER_AVAILABLE = True
 except ImportError:
     JUPYTER_AVAILABLE = False
-    logger.info('Jupyter is not avialable', exc_info=True)
+    logger.info('Jupyter is not available', exc_info=True)
 
 
 if JUPYTER_AVAILABLE:
