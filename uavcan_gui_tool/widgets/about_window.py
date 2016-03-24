@@ -16,7 +16,7 @@ from PyQt5.QtCore import Qt, PYQT_VERSION_STR, QSize
 
 
 ABOUT_TEXT = ('''
-<h3>UAVCAN GUI Tool version {0}.</h3>
+<h3>UAVCAN GUI Tool v{0}</h3>
 Cross-platform application for <a href="http://uavcan.org/">UAVCAN bus</a> management and diagnostics.
 
 This application is distributed under the terms of the MIT software license. The source repository and the bug \
@@ -112,6 +112,5 @@ class AboutWindow(QDialog):
         layout.addWidget(self._exit_button)
         self.setLayout(layout)
 
-        size = QSize(600, 300)
-        self.setMinimumSize(size)
-        self.resize(size)
+        self.setMinimumSize(QSize(600, 300))
+        self.resize(QSize(600, 400))
