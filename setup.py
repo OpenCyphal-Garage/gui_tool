@@ -36,6 +36,7 @@ args = dict(
     packages=find_packages(),
     setup_requires=[
         'setuptools',
+        'setuptools_git>=1.0',
     ],
     install_requires=[
         'setuptools',
@@ -56,9 +57,7 @@ args = dict(
             '{0}={0}.main:main'.format(PACKAGE_NAME),
         ]
     },
-    data_files=[
-        (os.path.dirname(ICON_HIRES), [ICON_HIRES]),  # This icon will be used by the application itself, not by DE etc.
-    ],
+    include_package_data=True,
 
     # Meta fields, they have no technical meaning
     description='UAVCAN Bus Management and Diagnostics App',
