@@ -8,11 +8,15 @@
 
 import sys
 import glob
+import time
+import threading
+import copy
 from .widgets import show_error, get_monospace_font
 from PyQt5.QtWidgets import QDialog, QSpinBox, QComboBox, QLineEdit, QPushButton, QLabel, QVBoxLayout, QCompleter
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from logging import getLogger
 from collections import OrderedDict
+from itertools import count
 
 
 logger = getLogger(__name__)
@@ -70,9 +74,39 @@ def list_ifaces():
         return out
 
 
-def run_iface_config_window(icon):
-    ifaces = list_ifaces()
+class BackgroundIfaceListUpdater:
+    UPDATE_INTERVAL = 0.5
 
+    def __init__(self):
+        self._ifaces = list_ifaces()
+        self._thread = threading.Thread(target=self._run, name='iface_lister', daemon=True)
+        self._keep_going = True
+        self._lock = threading.Lock()
+
+    def __enter__(self):
+        logger.debug('Starting iface list updater')
+        self._thread.start()
+        return self
+
+    def __exit__(self, *_):
+        logger.debug('Stopping iface list updater...')
+        self._keep_going = False
+        self._thread.join()
+        logger.debug('Stopped iface list updater')
+
+    def _run(self):
+        while self._keep_going:
+            time.sleep(self.UPDATE_INTERVAL)
+            new_list = list_ifaces()
+            with self._lock:
+                self._ifaces = new_list
+
+    def get_list(self):
+        with self._lock:
+            return copy.copy(self._ifaces)
+
+
+def run_iface_config_window(icon):
     win = QDialog()
     win.setWindowTitle('CAN Interface Configuration')
     win.setWindowIcon(icon)
@@ -82,7 +116,6 @@ def run_iface_config_window(icon):
     combo.setEditable(True)
     combo.setInsertPolicy(QComboBox.NoInsert)
     combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-    combo.addItems(ifaces.keys())
 
     combo_completer = QCompleter()
     combo_completer.setCaseSensitivity(Qt.CaseSensitive)
@@ -98,6 +131,35 @@ def run_iface_config_window(icon):
     extra_args.setFont(get_monospace_font())
 
     ok = QPushButton('OK', win)
+
+    ifaces = None
+
+    def update_iface_list():
+        nonlocal ifaces
+        ifaces = iface_lister.get_list()
+        known_keys = set()
+        remove_indices = []
+        was_empty = combo.count() == 0
+        # Marking known and scheduling for removal
+        for idx in count():
+            tx = combo.itemText(idx)
+            if not tx:
+                break
+            known_keys.add(tx)
+            if tx not in ifaces:
+                logger.debug('Removing iface %r', tx)
+                remove_indices.append(idx)
+        # Removing - starting from the last item in order to retain indexes
+        for idx in remove_indices[::-1]:
+            combo.removeItem(idx)
+        # Adding new items - starting from the last item in order to retain the final order
+        for key in list(ifaces.keys())[::-1]:
+            if key not in known_keys:
+                logger.debug('Adding iface %r', key)
+                combo.insertItem(0, key)
+        # Updating selection
+        if was_empty:
+            combo.setCurrentIndex(0)
 
     result = None
     kwargs = {}
@@ -135,6 +197,13 @@ def run_iface_config_window(icon):
     layout.addWidget(ok)
     layout.setSizeConstraint(layout.SetFixedSize)
     win.setLayout(layout)
-    win.exec()
+
+    with BackgroundIfaceListUpdater() as iface_lister:
+        update_iface_list()
+        timer = QTimer(win)
+        timer.setSingleShot(False)
+        timer.timeout.connect(update_iface_list)
+        timer.start(int(BackgroundIfaceListUpdater.UPDATE_INTERVAL / 2 * 1000))
+        win.exec()
 
     return result, kwargs
