@@ -14,7 +14,7 @@ UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN b
 The general approach is simple:
 
 1. Install PyQt5 for Python 3 using your OS' package manager (e.g. APT).
-Make sure that PyQt4 is not installed for Python 3.
+**Make sure that neither PySide nor PyQt4 are installed**.
 2. Install the application itself from PyPI: `pip3 install uavcan_gui_tool`.
 Alternatively, if you're a developer and you want to install your local copy, use `pip3 install .`.
 
@@ -42,6 +42,12 @@ If installation fails with an error like below, try to install IPython directly 
 
 > error: Setup script exited with error in ipython setup command:
 > Invalid environment marker: sys_platform == "darwin" and platform_python_implementation == "CPython"
+
+If the application fails to start with an error like below, remove your existing installation of PyQtGraph
+(`pip3 uninstall pyqtgraph`) and re-install the application using the commands above.
+**Do not install PySide or PyQt4.**
+
+> Exception: PyQtGraph requires either PyQt4 or PySide; neither package could be imported.
 
 If you're still unable to install the package, please open a ticket.
 
