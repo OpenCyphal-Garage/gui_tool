@@ -45,11 +45,14 @@ args = dict(
         'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'numpy',
-        'pyqtgraph>=0.9.10',
+        # The nature of this hack is covered in this wonderful answer http://stackoverflow.com/questions/17366784
+        'pyqtgraph<=0.9.11',    # Version 0.9.11 doesn't actually exist
     ],
     dependency_links=[
         # TODO: Migrate to PyQtGraph from PIP when it's updated there. Current version from PIP doesn't work with PyQt5.
-        'https://github.com/pyqtgraph/pyqtgraph/tarball/9d64b269d57c84faa00ecd92474ca67eb45e6094#egg=pyqtgraph-0.9.10',
+        # See the stackoverflow link above for explanation of what we're trying to brew here
+        'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip' +\
+        '#egg=pyqtgraph-0.9.11',
     ],
     # We can't use "scripts" here, because generated shims don't work with multiprocessing pickler.
     entry_points={
