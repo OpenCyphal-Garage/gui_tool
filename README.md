@@ -33,8 +33,8 @@ but it may come in handy when using the embedded IPython console.
 ```bash
 sudo apt-get purge python3-pyqt4 python3-pyside
 sudo apt-get update; sudo apt-get upgrade -y
-sudo apt-get install -y python3-numpy python3-pyqt5 python3-pyqt5.qtsvg
-sudo pip3 install uavcan_gui_tool
+sudo apt-get install -y python3-pip python3-numpy python3-pyqt5 python3-pyqt5.qtsvg
+sudo pip3 install uavcan_gui_tool --process-dependency-links
 ```
 
 #### Troubleshooting
