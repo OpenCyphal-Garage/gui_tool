@@ -151,10 +151,13 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
         self._max_x = max(self._max_x, x)
 
     def remove_curves_provided_by_extractor(self, extractor):
-        curves = self._extractor_associations[extractor]
-        del self._extractor_associations[extractor]
-        for c in curves:
-            self._plot.removeItem(c.plot)
+        try:
+            curves = self._extractor_associations[extractor]
+            del self._extractor_associations[extractor]
+            for c in curves:
+                self._plot.removeItem(c.plot)
+        except KeyError:
+            pass
 
         if self._legend is not None:
             self._legend.scene().removeItem(self._legend)
