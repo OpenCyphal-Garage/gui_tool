@@ -15,6 +15,7 @@ import glob
 import subprocess
 from setuptools import setup, find_packages
 from setuptools.archive_util import unpack_archive
+from setuptools.command.install import install
 
 PACKAGE_NAME = 'uavcan_gui_tool'
 HUMAN_FRIENDLY_NAME = 'UAVCAN GUI Tool'
@@ -26,6 +27,50 @@ assert sys.version_info[0] == 3, 'Python 3 is required'
 
 ICON_HIRES = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
 ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
+
+PYQTGRAPH_URL = 'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip'
+
+
+#
+# Custom command handlers
+#
+def run_python_process(cmd_args):
+    subprocess.check_call(('%s ' % sys.executable) + cmd_args, shell=True)
+
+
+class InstallHandler(install):
+    def run(self):
+        # Freedesktop support
+        if sys.platform.startswith('linux'):
+            # Manually installing the icon (we can't use data_files because... oh, it just doesn't work here)
+            icon_installation_path = args['desktop_entries'][PACKAGE_NAME]['Icon']
+            print('Permanently installing icon to:', icon_installation_path)
+            try:
+                shutil.rmtree(icon_installation_path)
+            except Exception:
+                pass
+            try:
+                os.makedirs(os.path.dirname(icon_installation_path))
+            except Exception:
+                pass
+            shutil.copy(ICON_HIRES, icon_installation_path)
+
+            # Manually invoking the freedesktop extension
+            self.run_command('install_desktop')
+
+        # Applying embarrassing hacks to get the CORRECT VERSION OF PYQTGRAPH
+        for _ in range(5):  # In dev setups there may be multiple eggs, we need to get rid of them
+            try:
+                run_python_process('-m pip uninstall pyqtgraph -y')
+            except Exception:
+                break
+
+        run_python_process('-m pip install %s' % PYQTGRAPH_URL)
+
+        # Delegating over to the standard install
+        print('Running the standard install...')
+        install.run(self)
+
 
 #
 # Setup args common for all targets
@@ -45,14 +90,10 @@ args = dict(
         'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'numpy',
-        # The nature of this hack is covered in this wonderful answer http://stackoverflow.com/questions/17366784
-        'pyqtgraph<=0.9.11',    # Version 0.9.11 doesn't actually exist
-    ],
-    dependency_links=[
-        # TODO: Migrate to PyQtGraph from PIP when it's updated there. Current version from PIP doesn't work with PyQt5.
-        # See the stackoverflow link above for explanation of what we're trying to brew here
-        'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip' +\
-        '#egg=pyqtgraph-0.9.11',
+        # We need version 0.9.11, but it is not yet released.
+        # We can't use the 'dependency_links' feature because it's broken in newer versions of PIP.
+        # The installation of correct version of PyQtGraph is managed in a hackish way implemented above.
+        'pyqtgraph>=0.9.10',
     ],
     # We can't use "scripts" here, because generated shims don't work with multiprocessing pickler.
     entry_points={
@@ -61,6 +102,9 @@ args = dict(
         ]
     },
     include_package_data=True,
+    cmdclass={
+        'install': InstallHandler
+    },
 
     # Meta fields, they have no technical meaning
     description='UAVCAN Bus Management and Diagnostics App',
@@ -82,42 +126,24 @@ args = dict(
     ]
 )
 
-#
-# Handling additional features for a Freedesktop-compatible OS
-#
-if sys.platform.startswith('linux') and ('install' in sys.argv):
-    print('Freedesktop components will be installed')
-
+if sys.platform.startswith('linux'):
     # Delegating the desktop integration work to 'install_freedesktop'
     args.setdefault('setup_requires', []).append('install_freedesktop')
-    if 'install_desktop' not in sys.argv:
-        sys.argv.append('install_desktop')
 
-    # Resolving icon installation path (standard for Freedesktop)
-    icon_installation_path = os.path.join(sys.prefix, 'share/icons/hicolor/256x256/apps', PACKAGE_NAME + '.png')
+    icon_path = os.path.join(sys.prefix, 'share/icons/hicolor/256x256/apps', PACKAGE_NAME + '.png')
 
-    # Writing Desktop entry installation details
     args['desktop_entries'] = {
         PACKAGE_NAME: {
             'Name': HUMAN_FRIENDLY_NAME,
             'GenericName': args['description'],
             'Comment': args['description'],
             'Categories': 'Development;Utility;',
-            'Icon': icon_installation_path,
+            'Icon': icon_path,
         }
     }
 
-    # Manually installing the icon (we can't use data_files because... oh, I don't even want to explain that, sorry)
-    print('Permanently installing icon to:', icon_installation_path)
-    try:
-        shutil.rmtree(icon_installation_path)
-    except Exception:
-        pass
-    try:
-        os.makedirs(os.path.dirname(icon_installation_path))
-    except Exception:
-        pass
-    shutil.copy(ICON_HIRES, icon_installation_path)
+if os.name == 'nt':
+    args.setdefault('setup_requires', []).append('cx_Freeze')
 
 #
 # Windows-specific options
@@ -130,10 +156,6 @@ def get_windows_signtool_path():
     if os.path.isfile(p):
         return p
     raise RuntimeError('signtool.exe not found')
-
-if os.name == 'nt':
-    # Injecting installation dependency ad-hoc
-    args.setdefault('setup_requires', []).append('cx_Freeze')
 
 if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
