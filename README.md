@@ -93,8 +93,8 @@ Collect the resulting signed MSI from `dist/`.
 
 First, deploy the new version to PyPI. In order to do that, perform the following steps:
 
-1. Update the version tuple in `version.py`, e.g. `1, 0`.
-2. Create a new tag with the same version number, e.g. `git tag -a 1.0 -m v1.0`.
+1. Update the version tuple in `version.py`, e.g. `1, 0`, and commit this change.
+2. Create a new tag with the same version number as in the version file, e.g. `git tag -a 1.0 -m v1.0`.
 3. Push to master: `git push && git push --tags`
 
 Then, build a Windows MSI package using the instructions above, and upload the resulting MSI to
