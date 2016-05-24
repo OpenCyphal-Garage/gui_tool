@@ -93,7 +93,7 @@ args = dict(
         # We need version 0.9.11, but it is not yet released.
         # We can't use the 'dependency_links' feature because it's broken in newer versions of PIP.
         # The installation of correct version of PyQtGraph is managed in a hackish way implemented above.
-        'pyqtgraph>=0.9.10',
+        # 'pyqtgraph>=0.9.11',
     ],
     # We can't use "scripts" here, because generated shims don't work with multiprocessing pickler.
     entry_points={
