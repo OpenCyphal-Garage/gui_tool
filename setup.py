@@ -30,12 +30,24 @@ ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
 
 PYQTGRAPH_URL = 'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip'
 
+WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
+
 
 #
 # Custom command handlers
 #
 def run_python_process(cmd_args):
     subprocess.check_call(('%s ' % sys.executable) + cmd_args, shell=True)
+
+
+def get_windows_signtool_path():
+    # TODO: Search for signtool properly
+    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
+    if os.path.isfile(p):
+        return p
+    print('SIGNTOOL.EXE NOT FOUND (probably because the search algorithm is imperfect at best)')
+    print('Please provide path to SIGNTOOL.EXE:')
+    return input('> ')
 
 
 class InstallHandler(install):
@@ -145,18 +157,10 @@ if sys.platform.startswith('linux'):
 if os.name == 'nt':
     args.setdefault('setup_requires', []).append('cx_Freeze')
 
+
 #
 # Windows-specific options
 #
-WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
-
-def get_windows_signtool_path():
-    # TODO: Search for signtool properly
-    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
-    if os.path.isfile(p):
-        return p
-    raise RuntimeError('signtool.exe not found')
-
 if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
 
@@ -206,7 +210,7 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
                 # cx_Freeze doesn't respect the DSDL definition files that are embedded into the package,
                 # so we need to include the Pyuavcan package as data in order to work-around this problem.
                 # Despite the fact that Pyuavcan is included as data, we still need cx_Freeze to analyze its
-                # dependencies, so we don't exclude it explicilty.
+                # dependencies, so we don't exclude it explicitly.
                 os.path.join(unpacked_eggs_dir, 'uavcan'),
                 # Same thing goes with the main package - we want its directory structure untouched, so we include
                 # it as data, too.
