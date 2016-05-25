@@ -38,7 +38,7 @@ def node_health_to_color(health):
 
 class NodeTable(BasicTable):
     COLUMNS = [
-        BasicTable.Column('Node ID',
+        BasicTable.Column('NID',
                           lambda e: e.node_id),
         BasicTable.Column('Name',
                           lambda e: e.info.name if e.info else '?',
@@ -51,7 +51,7 @@ class NodeTable(BasicTable):
                                      node_health_to_color(e.status.health))),
         BasicTable.Column('Uptime',
                           lambda e: datetime.timedelta(days=0, seconds=e.status.uptime_sec)),
-        BasicTable.Column('Vendor-specific',
+        BasicTable.Column('VSSC',
                           lambda e: '%d  0x%04x' % (e.status.vendor_specific_status_code,
                                                     e.status.vendor_specific_status_code))
     ]
@@ -71,7 +71,7 @@ class NodeTable(BasicTable):
         self._timer.timeout.connect(self._update)
         self._timer.start(500)
 
-        self.setMinimumWidth(450)
+        self.setMinimumWidth(500)
 
     @property
     def monitor(self):

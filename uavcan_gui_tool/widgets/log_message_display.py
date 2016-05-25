@@ -28,7 +28,7 @@ def log_level_to_color(level):
 
 class LogMessageDisplayWidget(QGroupBox):
     COLUMNS = [
-        BasicTable.Column('Node',
+        BasicTable.Column('NID',
                           lambda e: e.transfer.source_node_id),
         BasicTable.Column('Local Time',
                           lambda e: datetime.datetime.fromtimestamp(e.transfer.ts_real)
