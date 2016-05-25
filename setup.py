@@ -42,7 +42,7 @@ args = dict(
         'setuptools_git>=1.0',
     ],
     install_requires=[
-        'setuptools',
+        'setuptools>=18.5',
         'uavcan>=1.0.0.dev11',
         'pyserial>=2.6',
         'qtawesome>=0.3.1',
