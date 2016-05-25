@@ -29,6 +29,11 @@ assert sys.version_info[0] == 3, 'Python 3 is required'
 ICON_HIRES = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
 ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
 
+#
+# Checking if git submodules are initialized
+#
+if not glob.glob(os.path.join(SOURCE_DIR, PACKAGE_NAME, 'thirdparty', '*', '*')):
+    raise Exception('GIT SUBMODULES ARE NOT INITIALIZED')
 
 #
 # Setup args common for all targets
