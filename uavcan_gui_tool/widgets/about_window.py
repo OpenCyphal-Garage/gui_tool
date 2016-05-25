@@ -113,4 +113,4 @@ class AboutWindow(QDialog):
         self.setLayout(layout)
 
         self.setMinimumSize(QSize(600, 300))
-        self.resize(QSize(600, 400))
+        self.resize(QSize(700, 400))
