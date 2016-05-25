@@ -40,7 +40,13 @@ if JUPYTER_AVAILABLE:
             if banner:
                 self.banner = banner.strip() + '\n\n'
 
-            self._execute('%matplotlib inline', True)
+            try:
+                # noinspection PyUnresolvedReferences
+                import matplotlib
+            except ImportError:
+                pass
+            else:
+                self._execute('%matplotlib inline', True)
 
         def write(self, text):
             self._append_plain_text(text, True)
