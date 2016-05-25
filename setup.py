@@ -15,7 +15,6 @@ import glob
 import subprocess
 from setuptools import setup, find_packages
 from setuptools.archive_util import unpack_archive
-from setuptools.command.install import install
 
 PACKAGE_NAME = 'uavcan_gui_tool'
 HUMAN_FRIENDLY_NAME = 'UAVCAN GUI Tool'
@@ -28,60 +27,25 @@ assert sys.version_info[0] == 3, 'Python 3 is required'
 ICON_HIRES = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
 ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
 
+
+#
+# Applying embarrassing hacks to get the CORRECT VERSION OF PYQTGRAPH
+# This must be done in the global scope! Install command does not get executed when installing via PIP
+#
 PYQTGRAPH_URL = 'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip'
 
-WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
 
-
-#
-# Custom command handlers
-#
 def run_python_process(cmd_args):
     subprocess.check_call(('%s ' % sys.executable) + cmd_args, shell=True)
 
+for _ in range(5):  # In dev setups there may be multiple eggs, we need to get rid of them
+    # noinspection PyBroadException
+    try:
+        run_python_process('-m pip uninstall pyqtgraph -y')
+    except Exception:
+        break
 
-def get_windows_signtool_path():
-    # TODO: Search for signtool properly
-    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
-    if os.path.isfile(p):
-        return p
-    print('SIGNTOOL.EXE NOT FOUND (probably because the search algorithm is imperfect at best)')
-    print('Please provide path to SIGNTOOL.EXE:')
-    return input('> ')
-
-
-class InstallHandler(install):
-    def run(self):
-        # Freedesktop support
-        if sys.platform.startswith('linux'):
-            # Manually installing the icon (we can't use data_files because... oh, it just doesn't work here)
-            icon_installation_path = args['desktop_entries'][PACKAGE_NAME]['Icon']
-            print('Permanently installing icon to:', icon_installation_path)
-            try:
-                shutil.rmtree(icon_installation_path)
-            except Exception:
-                pass
-            try:
-                os.makedirs(os.path.dirname(icon_installation_path))
-            except Exception:
-                pass
-            shutil.copy(ICON_HIRES, icon_installation_path)
-
-            # Manually invoking the freedesktop extension
-            self.run_command('install_desktop')
-
-        # Applying embarrassing hacks to get the CORRECT VERSION OF PYQTGRAPH
-        for _ in range(5):  # In dev setups there may be multiple eggs, we need to get rid of them
-            try:
-                run_python_process('-m pip uninstall pyqtgraph -y')
-            except Exception:
-                break
-
-        run_python_process('-m pip install %s' % PYQTGRAPH_URL)
-
-        # Delegating over to the standard install
-        print('Running the standard install...')
-        install.run(self)
+run_python_process('-m pip install %s' % PYQTGRAPH_URL)
 
 
 #
@@ -121,9 +85,6 @@ args = dict(
         ]
     },
     include_package_data=True,
-    cmdclass={
-        'install': InstallHandler
-    },
 
     # Meta fields, they have no technical meaning
     description='UAVCAN Bus Management and Diagnostics App',
@@ -161,13 +122,41 @@ if sys.platform.startswith('linux'):
         }
     }
 
+    # Manually installing the icon (we can't use data_files because... oh, it just doesn't work here)
+    icon_installation_path = args['desktop_entries'][PACKAGE_NAME]['Icon']
+    print('Permanently installing icon to:', icon_installation_path)
+    try:
+        shutil.rmtree(icon_installation_path)
+    except Exception:
+        pass
+    try:
+        os.makedirs(os.path.dirname(icon_installation_path))
+    except Exception:
+        pass
+    shutil.copy(ICON_HIRES, icon_installation_path)
+
+    # Manually invoking the freedesktop extension - this should work even if we're getting installed via PIP
+    sys.argv.append('install_desktop')
+
+
+#
+# Windows-specific options and hacks
+#
+WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
+
+
+def get_windows_signtool_path():
+    # TODO: Search for signtool properly
+    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
+    if os.path.isfile(p):
+        return p
+    print('SIGNTOOL.EXE NOT FOUND (probably because the search algorithm is imperfect at best)')
+    print('Please provide path to SIGNTOOL.EXE:')
+    return input('> ')
+
 if os.name == 'nt':
     args.setdefault('setup_requires', []).append('cx_Freeze')
 
-
-#
-# Windows-specific options
-#
 if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
 
