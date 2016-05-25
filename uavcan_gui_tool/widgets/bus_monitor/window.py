@@ -298,7 +298,10 @@ class BusMonitorWindow(QMainWindow):
         self.setCentralWidget(widget)
         self.setMinimumWidth(700)
         self.resize(800, 600)
-        self._update_widget_sizes()
+
+        # Calling directly from the constructor gets you wrong size information
+        # noinspection PyCallByClass,PyTypeChecker
+        QTimer.singleShot(500, self._update_widget_sizes)
 
     def _update_widget_sizes(self):
         max_footer_height = self.centralWidget().height() * 0.4
