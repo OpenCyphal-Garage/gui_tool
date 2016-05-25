@@ -25,7 +25,7 @@ tracker are located at <a href="https://github.com/UAVCAN/gui_tool">https://gith
 
 
 def _list_3rd_party():
-    import pyqtgraph
+    from ..thirdparty import pyqtgraph
     import qtawesome
     import serial
 

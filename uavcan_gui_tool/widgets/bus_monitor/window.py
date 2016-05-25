@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePo
     QPlainTextEdit, QDialog, QVBoxLayout, QMenu, QAction
 from PyQt5.QtGui import QColor, QIcon, QTextOption
 from PyQt5.QtCore import Qt, QTimer
-from pyqtgraph import PlotWidget, mkPen
+from ...thirdparty.pyqtgraph import PlotWidget, mkPen
 from logging import getLogger
 from .. import BasicTable, map_7bit_to_color, RealtimeLogWidget, get_monospace_font, get_icon, flash, get_app_icon, \
     show_error

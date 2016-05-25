@@ -11,7 +11,7 @@ import logging
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSpinBox, QComboBox, QLabel, QCheckBox, QDoubleSpinBox
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
-from pyqtgraph import PlotWidget, mkPen
+from ....thirdparty.pyqtgraph import PlotWidget, mkPen
 from . import AbstractPlotArea, add_crosshair
 from ... import make_icon_button
 

@@ -19,33 +19,15 @@ from setuptools.archive_util import unpack_archive
 PACKAGE_NAME = 'uavcan_gui_tool'
 HUMAN_FRIENDLY_NAME = 'UAVCAN GUI Tool'
 
-sys.path.append(os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
+SOURCE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+sys.path.append(os.path.join(SOURCE_DIR, PACKAGE_NAME))
 from version import __version__
 
 assert sys.version_info[0] == 3, 'Python 3 is required'
 
 ICON_HIRES = os.path.join(PACKAGE_NAME, 'icons', 'logo_256x256.png')
 ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
-
-
-#
-# Applying embarrassing hacks to get the CORRECT VERSION OF PYQTGRAPH
-# This must be done in the global scope! Install command does not get executed when installing via PIP
-#
-PYQTGRAPH_URL = 'https://github.com/pyqtgraph/pyqtgraph/archive/670d63cdf443d667eece3b203083692588f41693.zip'
-
-
-def run_python_process(cmd_args):
-    subprocess.check_call(('%s ' % sys.executable) + cmd_args, shell=True)
-
-for _ in range(5):  # In dev setups there may be multiple eggs, we need to get rid of them
-    # noinspection PyBroadException
-    try:
-        run_python_process('-m pip uninstall pyqtgraph -y')
-    except Exception:
-        break
-
-run_python_process('-m pip install %s' % PYQTGRAPH_URL)
 
 
 #
@@ -66,10 +48,6 @@ args = dict(
         'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'numpy',
-        # We need version 0.9.11, but it is not yet released.
-        # We can't use the 'dependency_links' feature because it's broken in newer versions of PIP.
-        # The installation of correct version of PyQtGraph is managed in a hackish way implemented above.
-        # 'pyqtgraph>=0.9.11',
         # These dependencies are not directly used by the application, but they are sometimes not pulled in
         # automatically by PIP, so we need to list them here. This should be investigated further.
         'traitlets',
