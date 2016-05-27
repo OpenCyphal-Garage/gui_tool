@@ -42,12 +42,6 @@ If installation fails with an error like below, try to install IPython directly 
 > error: Setup script exited with error in ipython setup command:
 > Invalid environment marker: sys_platform == "darwin" and platform_python_implementation == "CPython"
 
-If the application fails to start with an error like below, remove your existing installation of PyQtGraph
-(`pip3 uninstall pyqtgraph`) and re-install the application using the commands above.
-**Do not install PySide or PyQt4.**
-
-> Exception: PyQtGraph requires either PyQt4 or PySide; neither package could be imported.
-
 If you're still unable to install the package, please open a ticket.
 
 ### RPM-based distributions
