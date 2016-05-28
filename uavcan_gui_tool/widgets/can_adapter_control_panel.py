@@ -9,12 +9,12 @@
 import re
 import os
 from PyQt5.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QDialog, QTabWidget, QWidget, \
-    QCheckBox, QStatusBar, QProgressDialog, QMessageBox, QHeaderView, QTableWidgetItem
+    QCheckBox, QStatusBar, QProgressDialog, QMessageBox, QHeaderView, QTableWidgetItem, QSpinBox, QLineEdit
 from PyQt5.QtCore import QTimer
 from logging import getLogger
 import yaml
 
-from . import make_icon_button, get_icon, BasicTable, get_monospace_font
+from . import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error
 
 
 logger = getLogger(__name__)
@@ -123,20 +123,18 @@ class ConfigurationTable(BasicTable):
         BasicTable.Column('Name',
                           lambda e: e.name),
         BasicTable.Column('Value',
-                          lambda e: e.value),
+                          lambda e: e.value,
+                          resize_mode=QHeaderView.Stretch),
         BasicTable.Column('Default',
                           lambda e: e.default),
         BasicTable.Column('Min',
-                          lambda e: e.minimum),
+                          lambda e: e.minimum if e.type is not bool else ''),
         BasicTable.Column('Max',
-                          lambda e: e.maximum),
+                          lambda e: e.maximum if e.type is not bool else ''),
     ]
 
     def __init__(self, parent):
         super(ConfigurationTable, self).__init__(parent, self.COLUMNS, font=get_monospace_font())
-
-    def reload(self, params):
-        pass
 
 
 class StateWidget(QWidget):
@@ -177,6 +175,9 @@ class StateWidget(QWidget):
         layout.addWidget(self._table, 1)
         self.setLayout(layout)
 
+        # noinspection PyCallByClass,PyTypeChecker
+        QTimer.singleShot(100, self._do_reload)
+
     def _update_auto_reload(self):
         enabled = self._auto_reload_checkbox.isChecked()
         if enabled:
@@ -202,11 +203,87 @@ class StateWidget(QWidget):
         self._cli_iface.request_state(proxy)
 
 
+class ConfigurationParameterEditWindow(QDialog):
+    def __init__(self, parent, model, cli_iface, store_callback):
+        super(ConfigurationParameterEditWindow, self).__init__(parent)
+        self.setWindowTitle('Edit Parameter')
+        self.setModal(True)
+
+        self._model = model
+        self._cli_iface = cli_iface
+        self._store_callback = store_callback
+
+        name_label = QLabel(model.name, self)
+        name_label.setFont(get_monospace_font())
+
+        if model.type is bool:
+            self._value = QCheckBox(self)
+            self._value.setChecked(model.value)
+        elif model.type is int:
+            self._value = QSpinBox(self)
+            if model.minimum is not None:
+                self._value.setRange(model.minimum,
+                                     model.maximum)
+            else:
+                self._value.setRange(-0x80000000,
+                                     +0x7FFFFFFF)
+            self._value.setValue(model.value)
+        elif model.type is float:
+            self._value = QDoubleSpinBox(self)
+            if model.minimum is not None:
+                self._value.setRange(model.minimum,
+                                     model.maximum)
+            else:
+                self._value.setRange(-3.4028235e+38,
+                                     +3.4028235e+38)
+            self._value.setValue(model.value)
+        elif model.type is str:
+            self._value = QLineEdit(self)
+            self._value.setText(model.value)
+        else:
+            raise ValueError('Unsupported value type %r' % model.type)
+
+        self._ok_button = make_icon_button('check', 'Send changes to the device', self,
+                                           text='OK', on_clicked=self._do_ok)
+
+        self._cancel_button = make_icon_button('remove', 'Discard changes and close this window', self,
+                                               text='Cancel', on_clicked=self.close)
+
+        layout = QVBoxLayout(self)
+
+        value_layout = QHBoxLayout(self)
+        value_layout.addWidget(name_label)
+        value_layout.addWidget(self._value, 1)
+
+        controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(self._cancel_button)
+        controls_layout.addWidget(self._ok_button)
+
+        layout.addLayout(value_layout)
+        layout.addLayout(controls_layout)
+        self.setLayout(layout)
+
+    def _do_ok(self):
+        if self._model.type is bool:
+            value = self._value.isChecked()
+        elif self._model.type is int or self._model.type is float:
+            value = self._value.value()
+        else:
+            value = self._value.text()
+
+        self._store_callback(value)
+        self.close()
+
+
 class ConfigurationWidget(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, cli_iface):
         super(ConfigurationWidget, self).__init__(parent)
 
+        self._cli_iface = cli_iface
+
         self._table = ConfigurationTable(self)
+        self._table.cellDoubleClicked.connect(lambda row, col: self._do_edit_param(row))
+        self._parameters = []
 
         self._fetch_button = make_icon_button('refresh',
                                               'Fetch configuration from the adapter; local changes will be lost',
@@ -231,14 +308,59 @@ class ConfigurationWidget(QWidget):
         layout.addWidget(self._table, 1)
         self.setLayout(layout)
 
+        # noinspection PyCallByClass,PyTypeChecker
+        QTimer.singleShot(100, self._do_fetch)
+
+    def _do_edit_param(self, index):
+        def callback(value):
+            try:
+                self._cli_iface.set_config_param(self._parameters[index].name, value, self._show_callback_result)
+                # noinspection PyCallByClass,PyTypeChecker
+                QTimer.singleShot(10, self._do_fetch)
+            except Exception as ex:
+                show_error('Parameter Change Error', 'Could request parameter change.', ex, self)
+
+        try:
+            win = ConfigurationParameterEditWindow(self, self._parameters[index], self._cli_iface, callback)
+            win.show()
+        except Exception as ex:
+            show_error('Parameter Dialog Error', 'Could not open parameter edit dialog.', ex, self)
+
+    def _show_callback_result(self, result):
+        if isinstance(result, Exception):
+            self.window().show_message('Operation failed: %r', result)
+        elif not result:
+            self.window().show_message('Operation timed out')
+        else:
+            self.window().show_message('Success')
+
     def _do_fetch(self):
-        pass
+        def callback(params):
+            self._table.setUpdatesEnabled(False)
+            self._table.clear()
+            self._parameters = []
+
+            if params is None:
+                self.window().show_message('Configuration parameters request timed out')
+            elif isinstance(params, Exception):
+                self.window().show_message('Configuration parameters request failed: %r', params)
+            else:
+                self.window().show_message('Configuration parameters request succeeded')
+                self._parameters = params
+                self._table.setRowCount(len(params))
+                for row, par in enumerate(params):
+                    self._table.set_row(row, par)
+
+            self._table.setUpdatesEnabled(True)
+
+        self._table.clear()
+        self._cli_iface.request_all_config_params(callback)
 
     def _do_store(self):
-        pass
+        self._cli_iface.store_all_config_params(self._show_callback_result)
 
     def _do_erase(self):
-        pass
+        self._cli_iface.erase_all_config_params(self._show_callback_result)
 
 
 class SLCANCLIWidget(QWidget):
@@ -257,7 +379,7 @@ class SLCANControlPanel(QDialog):
         self._iface_name = iface_name
 
         self._state_widget = StateWidget(self, self._cli_iface)
-        self._config_widget = ConfigurationWidget(self)
+        self._config_widget = ConfigurationWidget(self, self._cli_iface)
 
         self._tab_widget = QTabWidget(self)
         self._tab_widget.addTab(self._state_widget, get_icon('dashboard'), 'Adapter State')
@@ -313,16 +435,51 @@ class SLCANCLIInterface:
         self._driver.execute_cli_command('stat', proxy)
 
     def request_all_config_params(self, callback):
-        pass
+        def proxy(resp):
+            if resp.expired:
+                callback(None)
+            else:
+                try:
+                    output = [ConfigurationParameter.parse_cli_response_line(x) for x in resp.lines]
+                    logger.info('Adapter config params: %r', output)
+                    callback(output)
+                except Exception as ex:
+                    callback(ex)
+
+        self._driver.execute_cli_command('cfg list', proxy)
+
+    @staticmethod
+    def _make_binary_proxy(callback):
+        def proxy(resp):
+            if resp.expired:
+                callback(None)
+            else:
+                if len(resp.lines) > 0:
+                    callback(Exception('Unexpected response: %r' % resp.lines))
+                else:
+                    callback(True)
+
+        return proxy
 
     def store_all_config_params(self, callback):
-        pass
+        self._driver.execute_cli_command('cfg save', self._make_binary_proxy(callback))
 
     def erase_all_config_params(self, callback):
-        pass
+        self._driver.execute_cli_command('cfg erase', self._make_binary_proxy(callback))
 
     def set_config_param(self, name, value, callback):
-        pass
+        if isinstance(value, (bool, int)):
+            value = '%d' % value
+        elif isinstance(value, float):
+            value = '%.9f' % value
+        elif isinstance(value, str):
+            pass
+        else:
+            raise ValueError('Unexpected value type: %r' % type(value))
+
+        line = 'cfg set %s %s' % (name, value)
+
+        self._driver.execute_cli_command(line, self._make_binary_proxy(callback))
 
     def execute_raw_command(self, command, callback):
         def proxy(resp):
