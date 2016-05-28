@@ -74,6 +74,7 @@ from .widgets.console import ConsoleManager, InternalObjectDescriptor
 from .widgets.subscriber import SubscriberWindow
 from .widgets.plotter import PlotterManager
 from .widgets.about_window import AboutWindow
+from .widgets.can_adapter_control_panel import CANAdapterControlPanel
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -150,11 +151,17 @@ class MainWindow(QMainWindow):
         new_plotter_action.setStatusTip('Open new graph plotter window')
         new_plotter_action.triggered.connect(self._plotter_manager.spawn_plotter)
 
+        show_can_adapter_controls_action = QAction(get_icon('plug'), 'CAN &Adapter Control Panel', self)
+        show_can_adapter_controls_action.setShortcut(QKeySequence('Ctrl+Shift+A'))
+        show_can_adapter_controls_action.setStatusTip('Open CAN adapter control panel (if supported by the adapter)')
+        show_can_adapter_controls_action.triggered.connect(self._try_open_can_adapter_control_panel)
+
         tools_menu = self.menuBar().addMenu('&Tools')
         tools_menu.addAction(show_bus_monitor_action)
         tools_menu.addAction(show_console_action)
         tools_menu.addAction(new_subscriber_action)
         tools_menu.addAction(new_plotter_action)
+        tools_menu.addAction(show_can_adapter_controls_action)
 
         #
         # Help menu
@@ -202,6 +209,12 @@ class MainWindow(QMainWindow):
                                                           make_vbox(self._log_message_widget),
                                                           make_vbox(self._dynamic_node_id_allocation_widget,
                                                                     stretch_index=1))))
+
+    def _try_open_can_adapter_control_panel(self):
+        try:
+            CANAdapterControlPanel(self, self._node, self._iface_name).show()
+        except Exception as ex:
+            show_error('CAN Adapter Control Panel error', 'Could not open CAN Adapter Control Panel', ex, self)
 
     def _make_console_context(self):
         default_transfer_priority = 30
