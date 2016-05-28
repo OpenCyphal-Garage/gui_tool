@@ -116,6 +116,7 @@ def run_iface_config_window(icon):
     combo.setEditable(True)
     combo.setInsertPolicy(QComboBox.NoInsert)
     combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+    combo.setFont(get_monospace_font())
 
     combo_completer = QCompleter()
     combo_completer.setCaseSensitivity(Qt.CaseSensitive)
