@@ -9,13 +9,12 @@
 import re
 import os
 from PyQt5.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QDialog, QTabWidget, QWidget, \
-    QCheckBox, QStatusBar, QProgressDialog, QMessageBox, QHeaderView, QTableWidgetItem, QSpinBox, QLineEdit, \
-    QComboBox, QCompleter, QPlainTextEdit
+    QCheckBox, QStatusBar, QHeaderView, QTableWidgetItem, QSpinBox, QLineEdit, QComboBox, QCompleter, QPlainTextEdit
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
 import yaml
 
-from . import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error, CommitableComboBoxWithHistory
+from .. import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error, CommitableComboBoxWithHistory
 
 
 logger = getLogger(__name__)
@@ -49,93 +48,6 @@ class StateTable(BasicTable):
                 self.set_row(i, kv)
 
         self.setUpdatesEnabled(True)
-
-
-class ConfigurationParameter:
-    def __init__(self, name, value, default, minimum, maximum):
-        self.name = name
-        self.value = value
-        self.default = default
-        self.minimum = minimum
-        self.maximum = maximum
-
-        def cast(what, to):
-            return to(what) if what is not None else None
-
-        # noinspection PyChainedComparisons
-        if isinstance(self.value, int) and 0 <= self.value <= 1 and self.minimum == 0 and self.maximum == 1:
-            self.type = bool
-            self.value = bool(self.value)
-        elif isinstance(self.value, int):
-            self.type = int
-        elif isinstance(self.value, float):
-            self.type = float
-        else:
-            raise ValueError('Invalid value type')
-
-        self.default = cast(self.default, self.type)
-        self.minimum = cast(self.minimum, self.type)
-        self.maximum = cast(self.maximum, self.type)
-
-    def __str__(self):
-        s = '%s = ' % self.name
-        s += ('%d' if self.type in (bool, int) else '%s') % self.value
-        if self.minimum is not None:
-            s += (' [%d, %d]' if self.type in (bool, int) else ' [%s, %s]') % (self.minimum, self.maximum)
-        if self.default is not None:
-            s += (' (%d)' if self.type in (bool, int) else ' (%s)') % self.default
-        return s
-
-    __repr__ = __str__
-
-    @staticmethod
-    def parse_cli_response_line(line):
-        # Examples:
-        # uart.baudrate = 115200 [2400, 3000000] (115200)
-        # uart.baudrate = 115200 [2400, 3000000]
-        # uart.baudrate = 115200
-        # uart.baudrate = 115200 (115200)
-        # Q: Why couldn't Chris try out the regular expressions he created until he left home?
-        # A: His mom wouldn't let him play with matches.
-        pattern = r'(?m)^\s*(\S+)\s*=\s*([^\s\[\(]+)\s*(?:\[(\S+),\s*(\S+)\])?\s*(?:\((\S+)\))?'
-        (name, value, minimum, maximum, default), = re.findall(pattern, line)
-
-        if not name or not value:
-            raise ValueError('Invalid parameter string %r: name or value could not be parsed' % line)
-
-        try:
-            value = eval(value)
-            minimum, maximum, default = [(eval(x) if x else None) for x in (minimum, maximum, default)]
-        except Exception as ex:
-            raise ValueError('Could not parse parameter string %r' % line) from ex
-
-        if (minimum is None) != (maximum is None):
-            raise ValueError('Invalid parameter string %r: minimum or maximum cannot be set separately' % line)
-
-        return ConfigurationParameter(name=name,
-                                      value=value,
-                                      default=default,
-                                      minimum=minimum,
-                                      maximum=maximum)
-
-
-class ConfigurationTable(BasicTable):
-    COLUMNS = [
-        BasicTable.Column('Name',
-                          lambda e: e.name),
-        BasicTable.Column('Value',
-                          lambda e: e.value,
-                          resize_mode=QHeaderView.Stretch),
-        BasicTable.Column('Default',
-                          lambda e: e.default),
-        BasicTable.Column('Min',
-                          lambda e: e.minimum if e.type is not bool else ''),
-        BasicTable.Column('Max',
-                          lambda e: e.maximum if e.type is not bool else ''),
-    ]
-
-    def __init__(self, parent):
-        super(ConfigurationTable, self).__init__(parent, self.COLUMNS, font=get_monospace_font())
 
 
 class StateWidget(QWidget):
@@ -204,9 +116,73 @@ class StateWidget(QWidget):
         self._cli_iface.request_state(proxy)
 
 
-class ConfigurationParameterEditWindow(QDialog):
+class ConfigParam:
+    def __init__(self, name, value, default, minimum, maximum):
+        self.name = name
+        self.value = value
+        self.default = default
+        self.minimum = minimum
+        self.maximum = maximum
+
+        def cast(what, to):
+            return to(what) if what is not None else None
+
+        # noinspection PyChainedComparisons
+        if isinstance(self.value, int) and 0 <= self.value <= 1 and self.minimum == 0 and self.maximum == 1:
+            self.type = bool
+            self.value = bool(self.value)
+        elif isinstance(self.value, int):
+            self.type = int
+        elif isinstance(self.value, float):
+            self.type = float
+        else:
+            raise ValueError('Invalid value type')
+
+        self.default = cast(self.default, self.type)
+        self.minimum = cast(self.minimum, self.type)
+        self.maximum = cast(self.maximum, self.type)
+
+    def __str__(self):
+        s = '%s = ' % self.name
+        s += ('%d' if self.type in (bool, int) else '%s') % self.value
+        if self.minimum is not None:
+            s += (' [%d, %d]' if self.type in (bool, int) else ' [%s, %s]') % (self.minimum, self.maximum)
+        if self.default is not None:
+            s += (' (%d)' if self.type in (bool, int) else ' (%s)') % self.default
+        return s
+
+    __repr__ = __str__
+
+    @staticmethod
+    def parse_cli_response_line(line):
+        # Examples:
+        # uart.baudrate = 115200 [2400, 3000000] (115200)
+        # uart.baudrate = 115200 [2400, 3000000]
+        # uart.baudrate = 115200
+        # uart.baudrate = 115200 (115200)
+        # Q: Why couldn't Chris try out the regular expressions he created until he left home?
+        # A: His mom wouldn't let him play with matches.
+        pattern = r'(?m)^\s*(\S+)\s*=\s*([^\s\[\(]+)\s*(?:\[(\S+),\s*(\S+)\])?\s*(?:\((\S+)\))?'
+        (name, value, minimum, maximum, default), = re.findall(pattern, line)
+
+        if not name or not value:
+            raise ValueError('Invalid parameter string %r: name or value could not be parsed' % line)
+
+        try:
+            value = eval(value)
+            minimum, maximum, default = [(eval(x) if x else None) for x in (minimum, maximum, default)]
+        except Exception as ex:
+            raise ValueError('Could not parse parameter string %r' % line) from ex
+
+        if (minimum is None) != (maximum is None):
+            raise ValueError('Invalid parameter string %r: minimum or maximum cannot be set separately' % line)
+
+        return ConfigParam(name=name, value=value, default=default, minimum=minimum, maximum=maximum)
+
+
+class ConfigParamEditWindow(QDialog):
     def __init__(self, parent, model, cli_iface, store_callback):
-        super(ConfigurationParameterEditWindow, self).__init__(parent)
+        super(ConfigParamEditWindow, self).__init__(parent)
         self.setWindowTitle('Edit Parameter')
         self.setModal(True)
 
@@ -276,13 +252,27 @@ class ConfigurationParameterEditWindow(QDialog):
         self.close()
 
 
-class ConfigurationWidget(QWidget):
+class ConfigWidget(QWidget):
+    COLUMNS = [
+        BasicTable.Column('Name',
+                          lambda e: e.name),
+        BasicTable.Column('Value',
+                          lambda e: e.value,
+                          resize_mode=QHeaderView.Stretch),
+        BasicTable.Column('Default',
+                          lambda e: e.default),
+        BasicTable.Column('Min',
+                          lambda e: e.minimum if e.type is not bool else ''),
+        BasicTable.Column('Max',
+                          lambda e: e.maximum if e.type is not bool else ''),
+    ]
+
     def __init__(self, parent, cli_iface):
-        super(ConfigurationWidget, self).__init__(parent)
+        super(ConfigWidget, self).__init__(parent)
 
         self._cli_iface = cli_iface
 
-        self._table = ConfigurationTable(self)
+        self._table = BasicTable(self, self.COLUMNS, font=get_monospace_font())
         self._table.cellDoubleClicked.connect(lambda row, col: self._do_edit_param(row))
         self._parameters = []
 
@@ -323,7 +313,7 @@ class ConfigurationWidget(QWidget):
                 show_error('Parameter Change Error', 'Could request parameter change.', ex, self)
 
         try:
-            win = ConfigurationParameterEditWindow(self, self._parameters[index], self._cli_iface, callback)
+            win = ConfigParamEditWindow(self, self._parameters[index], self._cli_iface, callback)
             win.show()
         except Exception as ex:
             show_error('Parameter Dialog Error', 'Could not open parameter edit dialog.', ex, self)
@@ -365,9 +355,9 @@ class ConfigurationWidget(QWidget):
         self._cli_iface.erase_all_config_params(self._show_callback_result)
 
 
-class SLCANCLIWidget(QWidget):
+class CLIWidget(QWidget):
     def __init__(self, parent, cli_iface):
-        super(SLCANCLIWidget, self).__init__(parent)
+        super(CLIWidget, self).__init__(parent)
 
         self._cli_iface = cli_iface
 
@@ -428,17 +418,17 @@ class SLCANCLIWidget(QWidget):
         self._cli_iface.execute_raw_command(command, callback)
 
 
-class SLCANControlPanel(QDialog):
+class ControlPanelWindow(QDialog):
     def __init__(self, parent, cli_iface, iface_name):
-        super(SLCANControlPanel, self).__init__(parent)
+        super(ControlPanelWindow, self).__init__(parent)
         self.setWindowTitle('SLCAN Adapter Control Panel')
 
         self._cli_iface = cli_iface
         self._iface_name = iface_name
 
         self._state_widget = StateWidget(self, self._cli_iface)
-        self._config_widget = ConfigurationWidget(self, self._cli_iface)
-        self._cli_widget = SLCANCLIWidget(self, self._cli_iface)
+        self._config_widget = ConfigWidget(self, self._cli_iface)
+        self._cli_widget = CLIWidget(self, self._cli_iface)
 
         self._tab_widget = QTabWidget(self)
         self._tab_widget.addTab(self._state_widget, get_icon('dashboard'), 'Adapter State')
@@ -466,13 +456,13 @@ class SLCANControlPanel(QDialog):
         self._status_bar.showMessage(text % fmt, duration * 1000)
 
 
-class SLCANCLIInterface:
+class CLIInterface:
     def __init__(self, driver):
         self._driver = driver
 
     def check_is_interface_supported(self, callback):
         def proxy(resp):
-            logger.info('SLCANCLIInterface.check_is_interface_supported() response: %r', resp)
+            logger.info('CLIInterface.check_is_interface_supported() response: %r', resp)
             callback(not resp.expired)
 
         self._driver.execute_cli_command('stat', proxy)
@@ -500,7 +490,7 @@ class SLCANCLIInterface:
                 callback(None)
             else:
                 try:
-                    output = [ConfigurationParameter.parse_cli_response_line(x) for x in resp.lines]
+                    output = [ConfigParam.parse_cli_response_line(x) for x in resp.lines]
                     logger.info('Adapter config params: %r', output)
                     callback(output)
                 except Exception as ex:
@@ -554,44 +544,3 @@ class SLCANCLIInterface:
     @staticmethod
     def is_backend_supported(driver):
         return hasattr(driver, 'execute_cli_command')
-
-
-def spawn_window(parent, node, iface_name):
-    driver = node.can_driver
-
-    if not SLCANCLIInterface.is_backend_supported(driver):
-        mbox = QMessageBox(parent)
-        mbox.setWindowTitle('Unsupported CAN Backend')
-        mbox.setText('CAN Adapter Control Panel cannot be used with the current CAN backend.')
-        mbox.setInformativeText('The current backend is %r.' % type(driver).__name__)
-        mbox.setIcon(QMessageBox.Information)
-        mbox.setStandardButtons(QMessageBox.Ok)
-        mbox.exec()
-        return
-
-    progress_dialog = QProgressDialog(parent)
-    progress_dialog.setWindowTitle('CAN Adapter Control Panel Initialization')
-    progress_dialog.setLabelText('Detecting CAN adapter capabilities...')
-    progress_dialog.setMinimumDuration(800)
-    progress_dialog.setCancelButton(None)
-    progress_dialog.setRange(0, 0)
-    progress_dialog.show()
-
-    def supported_callback(supported):
-        progress_dialog.close()
-
-        if not supported:
-            mbox = QMessageBox(parent)
-            mbox.setWindowTitle('Incompatible CAN Adapter')
-            mbox.setText('CAN Adapter Control Panel cannot be used with the connected adapter.')
-            mbox.setInformativeText('Connected SLCAN adapter does not support CLI extensions.')
-            mbox.setIcon(QMessageBox.Information)
-            mbox.setStandardButtons(QMessageBox.Ok)
-            mbox.exec()
-            return
-
-        slcp = SLCANControlPanel(parent, slcan_iface, iface_name)
-        slcp.show()
-
-    slcan_iface = SLCANCLIInterface(driver)
-    slcan_iface.check_is_interface_supported(supported_callback)

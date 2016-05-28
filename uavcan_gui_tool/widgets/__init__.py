@@ -84,6 +84,7 @@ class BasicTable(QTableWidget):
     def clear(self):
         super(BasicTable, self).clear()
         self.setHorizontalHeaderLabels([x.name for x in self.columns])
+        self.setRowCount(0)
 
     def get_row_as_string(self, row, column_predicate=None):
         first = True
