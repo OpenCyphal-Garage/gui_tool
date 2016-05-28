@@ -74,7 +74,7 @@ from .widgets.console import ConsoleManager, InternalObjectDescriptor
 from .widgets.subscriber import SubscriberWindow
 from .widgets.plotter import PlotterManager
 from .widgets.about_window import AboutWindow
-from .widgets.can_adapter_control_panel import CANAdapterControlPanel
+from .widgets.can_adapter_control_panel import spawn_window as spawn_can_adapter_control_panel
 
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
         show_can_adapter_controls_action = QAction(get_icon('plug'), 'CAN &Adapter Control Panel', self)
         show_can_adapter_controls_action.setShortcut(QKeySequence('Ctrl+Shift+A'))
         show_can_adapter_controls_action.setStatusTip('Open CAN adapter control panel (if supported by the adapter)')
-        show_can_adapter_controls_action.triggered.connect(self._try_open_can_adapter_control_panel)
+        show_can_adapter_controls_action.triggered.connect(self._try_spawn_can_adapter_control_panel)
 
         tools_menu = self.menuBar().addMenu('&Tools')
         tools_menu.addAction(show_bus_monitor_action)
@@ -210,11 +210,11 @@ class MainWindow(QMainWindow):
                                                           make_vbox(self._dynamic_node_id_allocation_widget,
                                                                     stretch_index=1))))
 
-    def _try_open_can_adapter_control_panel(self):
+    def _try_spawn_can_adapter_control_panel(self):
         try:
-            CANAdapterControlPanel(self, self._node, self._iface_name).show()
+            spawn_can_adapter_control_panel(self, self._node, self._iface_name)
         except Exception as ex:
-            show_error('CAN Adapter Control Panel error', 'Could not open CAN Adapter Control Panel', ex, self)
+            show_error('CAN Adapter Control Panel error', 'Could not spawn CAN Adapter Control Panel', ex, self)
 
     def _make_console_context(self):
         default_transfer_priority = 30

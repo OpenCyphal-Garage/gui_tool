@@ -81,6 +81,10 @@ class BasicTable(QTableWidget):
         if font:
             self.setFont(font)
 
+    def clear(self):
+        super(BasicTable, self).clear()
+        self.setHorizontalHeaderLabels([x.name for x in self.columns])
+
     def get_row_as_string(self, row, column_predicate=None):
         first = True
         out_string = ''
