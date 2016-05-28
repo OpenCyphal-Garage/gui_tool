@@ -9,12 +9,13 @@
 import re
 import os
 from PyQt5.QtWidgets import QLabel, QDoubleSpinBox, QHBoxLayout, QVBoxLayout, QDialog, QTabWidget, QWidget, \
-    QCheckBox, QStatusBar, QProgressDialog, QMessageBox, QHeaderView, QTableWidgetItem, QSpinBox, QLineEdit
-from PyQt5.QtCore import QTimer
+    QCheckBox, QStatusBar, QProgressDialog, QMessageBox, QHeaderView, QTableWidgetItem, QSpinBox, QLineEdit, \
+    QComboBox, QCompleter, QPlainTextEdit
+from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
 import yaml
 
-from . import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error
+from . import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error, CommitableComboBoxWithHistory
 
 
 logger = getLogger(__name__)
@@ -304,6 +305,7 @@ class ConfigurationWidget(QWidget):
         buttons_layout.addWidget(self._store_button)
         buttons_layout.addWidget(self._erase_button)
 
+        layout.addWidget(QLabel('Double click to change parameter value.', self))
         layout.addLayout(buttons_layout)
         layout.addWidget(self._table, 1)
         self.setLayout(layout)
@@ -369,6 +371,62 @@ class SLCANCLIWidget(QWidget):
 
         self._cli_iface = cli_iface
 
+        self._command_line = CommitableComboBoxWithHistory(self)
+        self._command_line.setToolTip('Enter the command here')
+        self._command_line.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self._command_line.setFont(get_monospace_font())
+        self._command_line.on_commit = self._do_execute
+
+        self._command_line_completer = QCompleter()
+        self._command_line_completer.setCaseSensitivity(Qt.CaseSensitive)
+        self._command_line_completer.setModel(self._command_line.model())
+
+        self._command_line.setCompleter(self._command_line_completer)
+
+        self._execute_button = make_icon_button('flash', 'Execute command', self, on_clicked=self._do_execute)
+
+        self._response_box = QPlainTextEdit(self)
+        self._response_box.setToolTip('Command output will be printed here')
+        self._response_box.setReadOnly(True)
+        self._response_box.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self._response_box.setFont(get_monospace_font())
+        self._response_box.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        try:
+            self._log_viewer.setPlaceholderText('Command output will be printed here')
+        except AttributeError:      # Old PyQt
+            pass
+
+        layout = QVBoxLayout(self)
+
+        controls_layout = QHBoxLayout(self)
+        controls_layout.addWidget(self._command_line, 1)
+        controls_layout.addWidget(self._execute_button)
+
+        layout.addLayout(controls_layout)
+        layout.addWidget(self._response_box, 1)
+        self.setLayout(layout)
+
+    def _do_execute(self):
+        self._response_box.clear()
+
+        command = self._command_line.currentText()
+        if not command.strip():
+            return
+
+        self._command_line.add_current_text_to_history()
+
+        def callback(lines):
+            self.setEnabled(True)
+            if lines is None:
+                self.window().show_message('Command response timed out')
+                self._response_box.setPlainText('<RESPONSE TIMED OUT>')
+            else:
+                self.window().show_message('Command response received')
+                self._response_box.setPlainText(lines)
+
+        self.setEnabled(False)
+        self._cli_iface.execute_raw_command(command, callback)
+
 
 class SLCANControlPanel(QDialog):
     def __init__(self, parent, cli_iface, iface_name):
@@ -380,10 +438,12 @@ class SLCANControlPanel(QDialog):
 
         self._state_widget = StateWidget(self, self._cli_iface)
         self._config_widget = ConfigurationWidget(self, self._cli_iface)
+        self._cli_widget = SLCANCLIWidget(self, self._cli_iface)
 
         self._tab_widget = QTabWidget(self)
         self._tab_widget.addTab(self._state_widget, get_icon('dashboard'), 'Adapter State')
         self._tab_widget.addTab(self._config_widget, get_icon('wrench'), 'Configuration')
+        self._tab_widget.addTab(self._cli_widget, get_icon('terminal'), 'Command Line')
 
         self._status_bar = QStatusBar(self)
         self._status_bar.setSizeGripEnabled(False)
