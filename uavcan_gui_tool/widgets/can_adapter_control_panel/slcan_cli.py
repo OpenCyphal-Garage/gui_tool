@@ -277,15 +277,15 @@ class ConfigWidget(QWidget):
         self._parameters = []
 
         self._fetch_button = make_icon_button('refresh',
-                                              'Fetch configuration from the adapter; local changes will be lost',
+                                              'Fetch configuration from the adapter',
                                               self, on_clicked=self._do_fetch, text='Fetch')
 
         self._store_button = make_icon_button('database',
-                                              'Send configuration to the adapter',
+                                              'Store the current configuration into non-volatile memory on the adapter',
                                               self, on_clicked=self._do_store, text='Store')
 
         self._erase_button = make_icon_button('eraser',
-                                              'Erase configuration on the adapter',
+                                              'Erase configuration from the non-volatile memory',
                                               self, on_clicked=self._do_erase, text='Erase')
 
         layout = QVBoxLayout(self)
