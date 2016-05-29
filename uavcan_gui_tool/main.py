@@ -392,6 +392,15 @@ class MainWindow(QMainWindow):
                     pass
             active_handles.clear()
 
+        def can_send(can_id, data, extended=False):
+            """
+            Args:
+                can_id:     CAN ID of the frame
+                data:       Payload as bytes()
+                extended:   True to send a 29-bit frame; False to send an 11-bit frame
+            """
+            self._node.can_driver.send(can_id, data, extended=extended)
+
         return [
             InternalObjectDescriptor('can_iface_name', self._iface_name,
                                      'Name of the CAN bus interface'),
@@ -412,7 +421,9 @@ class MainWindow(QMainWindow):
             InternalObjectDescriptor('uavcan', uavcan,
                                      'The main Pyuavcan module'),
             InternalObjectDescriptor('main_window', self,
-                                     'Main window object, holds references to all business logic objects')
+                                     'Main window object, holds references to all business logic objects'),
+            InternalObjectDescriptor('can_send', can_send,
+                                     'Sends a raw CAN frame'),
         ]
 
     def _show_console_window(self):
