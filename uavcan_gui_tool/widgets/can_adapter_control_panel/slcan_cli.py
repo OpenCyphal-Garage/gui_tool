@@ -451,6 +451,7 @@ class ControlPanelWindow(QDialog):
         layout.setContentsMargins(left, top, right, bottom)
 
         self.setLayout(layout)
+        self.resize(400, 400)
 
     def show_message(self, text, *fmt, duration=0):
         self._status_bar.showMessage(text % fmt, duration * 1000)

@@ -193,7 +193,7 @@ def run_iface_config_window(icon):
     layout.addWidget(combo)
     layout.addWidget(QLabel('Interface bitrate (SLCAN only):'))
     layout.addWidget(bitrate)
-    layout.addWidget(QLabel('Optional arguments (refer to Pyuavcan for info):'))
+    layout.addWidget(QLabel('Optional arguments (refer to PyUAVCAN for info):'))
     layout.addWidget(extra_args)
     layout.addWidget(ok)
     layout.setSizeConstraint(layout.SetFixedSize)
