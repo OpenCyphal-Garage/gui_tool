@@ -53,6 +53,7 @@ args = dict(
         'qtawesome>=0.3.1',
         'qtconsole>=4.2.0',
         'pyyaml>=3.10',
+        'easywebdav>=1.2',
         'numpy',
         # These dependencies are not directly used by the application, but they are sometimes not pulled in
         # automatically by PIP, so we need to list them here. This should be investigated further.

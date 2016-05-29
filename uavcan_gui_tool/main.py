@@ -61,6 +61,7 @@ from PyQt5.QtCore import QTimer, Qt, QUrl
 from .version import __version__
 from .iface_configurator import run_iface_config_window
 from .active_data_type_detector import ActiveDataTypeDetector
+from . import update_checker
 
 from .widgets import show_error, get_icon, get_app_icon
 from .widgets.node_monitor import NodeMonitorWidget
@@ -512,6 +513,11 @@ def main():
     logger.info('Creating main window; iface %r', iface)
     window = MainWindow(node, iface)
     window.show()
+
+    try:
+        update_checker.begin_async_check(window)
+    except Exception:
+        logger.error('Could not start update checker', exc_info=True)
 
     logger.info('Init complete, invoking the Qt event loop')
     exit_code = app.exec_()
