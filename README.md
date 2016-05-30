@@ -32,7 +32,7 @@ but it may come in handy when using the embedded IPython console.
 
 ```bash
 sudo apt-get install -y python3-pip python3-numpy python3-pyqt5 python3-pyqt5.qtsvg
-sudo pip3 install uavcan_gui_tool
+sudo pip3 install git+https://github.com/UAVCAN/gui_tool@master
 ```
 
 #### Troubleshooting
