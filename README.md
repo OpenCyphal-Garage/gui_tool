@@ -14,8 +14,9 @@ UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN b
 The general approach is simple:
 
 1. Install PyQt5 for Python 3 using your OS' package manager (e.g. APT).
-2. Install the application itself from PyPI: `pip3 install uavcan_gui_tool`
-(it is not necessary to clone this repository).
+2. Install the application itself from Git via PIP:
+`pip3 install git+https://github.com/UAVCAN/gui_tool@master`
+(it is not necessary to clone this repository manually).
 Alternatively, if you're a developer and you want to install your local copy, use `pip3 install .`.
 
 It also may be necessary to install additional dependencies, depending on your distribution (see details below).
