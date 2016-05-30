@@ -69,19 +69,31 @@ def _do_windows_check():
     if len(matches) > 0:
         newest = matches[0]
         if _version_tuple_to_int(newest[1]) > _version_tuple_to_int(__version__):
-            return 'https://' + hostname + newest[0]
+            url = 'https://' + hostname + newest[0]
+            return '<a href="{0}">{0}</a>'.format(url)
 
 
 def _do_pip_check():
-    with urllib.request.urlopen('https://pypi.python.org/pypi/uavcan_gui_tool/json') as response:
+    request = urllib.request.Request('https://api.github.com/repos/UAVCAN/gui_tool/tags',
+                                     headers={
+                                         'Accept': 'application/vnd.github.v3+json',
+                                     })
+    with urllib.request.urlopen(request) as response:
         data = response.read()
 
     data = json.loads(data.decode('utf8'), encoding='utf8')
 
-    version_tuple = [int(x) for x in data['info']['version'].split('.')]
+    newest_tag_name = data[0]['name']
+    logger.debug('Newest tag: %r', newest_tag_name)
+
+    match = re.match(r'^.*?(\d{1,3})\.(\d{1,3})', newest_tag_name)
+
+    version_tuple = int(match.group(1)), int(match.group(2))
+    logger.debug('Parsed version tuple: %r', version_tuple)
 
     if _version_tuple_to_int(version_tuple) > _version_tuple_to_int(__version__):
-        return data['info']['release_url']
+        git_url = 'https://github.com/UAVCAN/gui_tool'
+        return 'pip3 install --upgrade git+<a href="{0}">{0}</a>@{1}'.format(git_url, newest_tag_name)
 
 
 # noinspection PyBroadException
@@ -116,7 +128,7 @@ def begin_async_check(parent):
         logger.info('Update check skipped')
         return
 
-    update_link = None
+    update_reference = None
 
     def check_from_gui_thread():
         if background_thread.is_alive():
@@ -125,26 +137,26 @@ def begin_async_check(parent):
             gui_timer.stop()
             logger.info('Update checker stopped')
 
-        if update_link is None:
+        if update_reference is None:
             return
 
         mbox = QMessageBox(parent)
         mbox.setWindowTitle('Update Available')
-        mbox.setText('New version is available.<br><br><a href="{0}">{0}</a>'.format(update_link))
+        mbox.setText('New version is available.<br><br>%s' % update_reference)
         mbox.setIcon(QMessageBox.Information)
         mbox.setStandardButtons(QMessageBox.Ok)
         mbox.exec()
 
     def do_background_check():
-        nonlocal update_link
+        nonlocal update_reference
         # noinspection PyBroadException
         try:
             if RUNNING_ON_WINDOWS:
-                update_link = _do_windows_check()
+                update_reference = _do_windows_check()
             else:
-                update_link = _do_pip_check()
+                update_reference = _do_pip_check()
 
-            logger.info('Update link: %r', update_link)
+            logger.info('Update reference: %r', update_reference)
         except Exception:
             logger.error('Update checker failed', exc_info=True)
 
