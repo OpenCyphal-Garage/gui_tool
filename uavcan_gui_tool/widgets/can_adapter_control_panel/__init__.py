@@ -20,7 +20,7 @@ def spawn_window(parent, node, iface_name):
         mbox.setInformativeText('The current backend is %r.' % type(driver).__name__)
         mbox.setIcon(QMessageBox.Information)
         mbox.setStandardButtons(QMessageBox.Ok)
-        mbox.exec()
+        mbox.show()     # Not exec() because we don't want it to block!
         return
 
     progress_dialog = QProgressDialog(parent)
@@ -41,7 +41,7 @@ def spawn_window(parent, node, iface_name):
             mbox.setInformativeText('Connected SLCAN adapter does not support CLI extensions.')
             mbox.setIcon(QMessageBox.Information)
             mbox.setStandardButtons(QMessageBox.Ok)
-            mbox.exec()
+            mbox.show()     # Not exec() because we don't want it to block!
             return
 
         slcp = slcan_cli.ControlPanelWindow(parent, slcan_iface, iface_name)

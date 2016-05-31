@@ -33,7 +33,7 @@ def show_error(title, text, informative_text, parent=None):
     mbox.setIcon(QMessageBox.Critical)
     mbox.setStandardButtons(QMessageBox.Ok)
 
-    mbox.exec()
+    mbox.show()     # Not exec() because we don't want it to block!
 
 
 def request_confirmation(title, text, parent=None):
