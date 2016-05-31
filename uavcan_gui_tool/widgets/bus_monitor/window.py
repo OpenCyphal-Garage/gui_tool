@@ -401,6 +401,7 @@ class BusMonitorWindow(QMainWindow):
             return
 
         win = QDialog(self)
+        win.setAttribute(Qt.WA_DeleteOnClose)
         view = QPlainTextEdit(win)
         view.setReadOnly(True)
         view.setFont(get_monospace_font())

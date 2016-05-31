@@ -12,7 +12,7 @@ import datetime
 from functools import partial
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLabel, QLineEdit, QGroupBox, QVBoxLayout, QHBoxLayout, QStatusBar,\
     QHeaderView, QSpinBox, QCheckBox, QFileDialog, QApplication, QPlainTextEdit
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPalette
 from logging import getLogger
 from . import get_monospace_font, make_icon_button, BasicTable, show_error, request_confirmation
@@ -104,6 +104,8 @@ class InfoBox(QGroupBox):
         self._update()
 
     def _update(self):
+        logger.debug('Update...')
+
         # noinspection PyBroadException
         try:
             entry = self._node_monitor.get(self._target_node_id)
@@ -626,6 +628,7 @@ class NodePropertiesWindow(QDialog):
     def __init__(self, parent, node, target_node_id, file_server_widget, node_monitor,
                  dynamic_node_id_allocator_widget):
         super(NodePropertiesWindow, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
         self.setWindowTitle('Node Properties [%d]' % target_node_id)
         self.setMinimumWidth(640)
 

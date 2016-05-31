@@ -50,6 +50,7 @@ def _list_3rd_party():
 class AboutWindow(QDialog):
     def __init__(self, parent):
         super(AboutWindow, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle('About UAVCAN GUI Tool')
 
         #

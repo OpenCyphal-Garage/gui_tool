@@ -77,6 +77,7 @@ class SubscriberWindow(QDialog):
     def __init__(self, parent, node, active_data_type_detector):
         super(SubscriberWindow, self).__init__(parent)
         self.setWindowTitle(self.WINDOW_NAME_PREFIX)
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self._node = node
         self._active_data_type_detector = active_data_type_detector

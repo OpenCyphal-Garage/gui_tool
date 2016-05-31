@@ -8,6 +8,7 @@
 
 import logging
 from PyQt5.QtWidgets import QDockWidget, QVBoxLayout, QHBoxLayout, QWidget, QLabel
+from PyQt5.QtCore import Qt
 from .. import make_icon_button
 from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 class PlotContainerWidget(QDockWidget):
     def __init__(self, parent, plot_area_class, active_data_types):
         super(PlotContainerWidget, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self.on_close = lambda: None
 

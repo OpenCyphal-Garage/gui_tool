@@ -102,6 +102,7 @@ class StateWidget(QWidget):
             self.window().show_message('Auto reload stopped')
 
     def _do_reload(self):
+        logger.debug('Reloading state...')
         self.window().show_message('State requested...')
 
         def proxy(kv):
@@ -183,6 +184,7 @@ class ConfigParam:
 class ConfigParamEditWindow(QDialog):
     def __init__(self, parent, model, cli_iface, store_callback):
         super(ConfigParamEditWindow, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle('Edit Parameter')
         self.setModal(True)
 
@@ -422,6 +424,7 @@ class ControlPanelWindow(QDialog):
     def __init__(self, parent, cli_iface, iface_name):
         super(ControlPanelWindow, self).__init__(parent)
         self.setWindowTitle('SLCAN Adapter Control Panel')
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self._cli_iface = cli_iface
         self._iface_name = iface_name

@@ -9,7 +9,7 @@
 import sys
 import logging
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QCheckBox
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,7 @@ def _make_jupyter_log_handler(target_widget):
 class JupyterConsoleWindow(QDialog):
     def __init__(self, parent, kernel_manager, banner=None):
         super(JupyterConsoleWindow, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle('Jupyter console')
 
         self._jupyter_widget = JupyterWidget(self, kernel_manager, banner)

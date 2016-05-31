@@ -99,6 +99,7 @@ class NewValueExtractorWindow(QDialog):
 
     def __init__(self, parent, active_data_types):
         super(NewValueExtractorWindow, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
         self.setWindowTitle('New Plot')
         self.setModal(True)
 
@@ -290,6 +291,7 @@ class NewValueExtractorWindow(QDialog):
 class ExtractorWidget(QWidget):
     def __init__(self, parent, model):
         super(ExtractorWidget, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self.on_remove = lambda: None
 
@@ -358,6 +360,7 @@ class ExtractorWidget(QWidget):
             _set_color(self._color_button, QPalette.Button, self._model.color)
 
     def _update(self):
+        print('ExtractorWidget update...')
         self._error_label.setText(str(self._model.error_count))
 
     def _reset_errors(self):
