@@ -48,6 +48,7 @@ def _linux_parse_ip_link_show(out_ifaces):
 
 def list_ifaces():
     """Returns dictionary, where key is description, value is the OS assigned name of the port"""
+    logger.debug('Updating iface list...')
     if 'linux' in sys.platform.lower():
         # Linux system
         ifaces = glob.glob('/dev/serial/by-id/*')
