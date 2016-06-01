@@ -78,7 +78,26 @@ Collect the resulting signed MSI from `dist/`.
 
 ## Installing on OSX
 
-***MAINTAINERS WANTED***
+OSX support is a bit lacking in the way that installation doesn't create an entry in the applications menu,
+but this issue should be fixed someday in the future.
+Other than that, everything appears to function more or less correctly.
+If you have a choice, it is recommended to use Linux or Windows instead,
+as these ports are supported much better at the moment.
+
+Install XCode from App Store, install MacPorts from <https://www.macports.org/install.php>,
+then run the commands below.
+If you're prompted to install Command Line Developer Tools, agree.
+
+```bash
+sudo port selfupdate
+sudo port install curl-ca-bundle py35-pip py35-pyqt5 py35-numpy
+sudo python3.5 -m pip install git+https://github.com/UAVCAN/gui_tool@master
+```
+
+If you're using Homebrew or some other package manager, you know what to do.
+
+We would like to provide prebuilt application packages instead of the mess above.
+Contributions adding this capability would be welcome.
 
 ## Development
 
