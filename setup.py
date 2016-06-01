@@ -33,7 +33,10 @@ ICON_ICO = os.path.join(PACKAGE_NAME, 'icons', 'logo.ico')
 # Checking if git submodules are initialized
 #
 if not glob.glob(os.path.join(SOURCE_DIR, PACKAGE_NAME, 'thirdparty', '*', '*')):
-    raise Exception('GIT SUBMODULES ARE NOT INITIALIZED')
+    print('Initializing git submodules...')
+    res = os.system('git submodule update --init --recursive')
+    if res != 0:
+        raise RuntimeError('Could not initialize git submodules [%d]' % res)
 
 #
 # Setup args common for all targets
