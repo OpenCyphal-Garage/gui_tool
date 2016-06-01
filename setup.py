@@ -94,7 +94,7 @@ args = dict(
     ]
 )
 
-if sys.platform.startswith('linux'):
+if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
     # Delegating the desktop integration work to 'install_freedesktop'
     args.setdefault('setup_requires', []).append('install_freedesktop')
 
