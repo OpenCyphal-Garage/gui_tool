@@ -360,7 +360,6 @@ class ExtractorWidget(QWidget):
             _set_color(self._color_button, QPalette.Button, self._model.color)
 
     def _update(self):
-        print('ExtractorWidget update...')
         self._error_label.setText(str(self._model.error_count))
 
     def _reset_errors(self):
