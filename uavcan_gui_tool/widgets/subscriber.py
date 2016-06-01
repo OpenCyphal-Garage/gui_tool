@@ -83,7 +83,7 @@ class SubscriberWindow(QDialog):
         self._active_data_type_detector = active_data_type_detector
         self._active_data_type_detector.message_types_updated.connect(self._update_data_type_list)
 
-        self._message_queue = queue.Queue(1000000)
+        self._message_queue = queue.Queue()
 
         self._subscriber_handle = None
 

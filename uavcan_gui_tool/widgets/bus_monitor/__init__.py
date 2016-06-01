@@ -30,12 +30,10 @@ class IPCChannel:
     """
     This class is built as an abstraction over the underlying IPC communication channel.
     """
-    QUEUE_DEPTH = 1000000
-
     def __init__(self):
         # Queue is slower than pipe, but it allows to implement non-blocking sending easier,
         # and the buffer can be arbitrarily large.
-        self._q = multiprocessing.Queue(self.QUEUE_DEPTH)
+        self._q = multiprocessing.Queue()
 
     def send_nonblocking(self, obj):
         try:
