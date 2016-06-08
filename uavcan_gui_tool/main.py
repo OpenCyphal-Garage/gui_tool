@@ -487,7 +487,7 @@ def main():
             if not iface:
                 sys.exit(0)
         except Exception as ex:
-            show_error('Fatal error', 'Could not list available interfaces', ex)
+            show_error('Fatal error', 'Could not list available interfaces', ex, blocking=True)
             sys.exit(1)
 
         # Trying to start the node on the specified interface
@@ -506,7 +506,7 @@ def main():
             node.spin(0.1)
         except Exception as ex:
             logger.error('UAVCAN node init failed', exc_info=True)
-            show_error('Fatal error', 'Could not initialize UAVCAN node', ex)
+            show_error('Fatal error', 'Could not initialize UAVCAN node', ex, blocking=True)
         else:
             break
 

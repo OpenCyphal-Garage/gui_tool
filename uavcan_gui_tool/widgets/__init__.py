@@ -22,7 +22,7 @@ from functools import partial
 logger = getLogger(__name__)
 
 
-def show_error(title, text, informative_text, parent=None):
+def show_error(title, text, informative_text, parent=None, blocking=False):
     mbox = QMessageBox(parent)
 
     mbox.setWindowTitle(str(title))
@@ -33,7 +33,10 @@ def show_error(title, text, informative_text, parent=None):
     mbox.setIcon(QMessageBox.Critical)
     mbox.setStandardButtons(QMessageBox.Ok)
 
-    mbox.show()     # Not exec() because we don't want it to block!
+    if blocking:
+        mbox.exec()
+    else:
+        mbox.show()     # Not exec() because we don't want it to block!
 
 
 def request_confirmation(title, text, parent=None):
