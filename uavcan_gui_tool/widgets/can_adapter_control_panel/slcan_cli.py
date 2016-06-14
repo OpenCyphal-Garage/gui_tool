@@ -14,7 +14,8 @@ from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
 import yaml
 
-from .. import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error, CommitableComboBoxWithHistory
+from .. import make_icon_button, get_icon, BasicTable, get_monospace_font, show_error, CommitableComboBoxWithHistory, \
+    request_confirmation
 
 
 logger = getLogger(__name__)
@@ -278,6 +279,8 @@ class ConfigWidget(QWidget):
         self._table.cellDoubleClicked.connect(lambda row, col: self._do_edit_param(row))
         self._parameters = []
 
+        self._have_unsaved_changes = False
+
         self._fetch_button = make_icon_button('refresh',
                                               'Fetch configuration from the adapter',
                                               self, on_clicked=self._do_fetch, text='Fetch')
@@ -305,6 +308,10 @@ class ConfigWidget(QWidget):
         # noinspection PyCallByClass,PyTypeChecker
         QTimer.singleShot(100, self._do_fetch)
 
+    @property
+    def have_unsaved_changes(self):
+        return self._have_unsaved_changes
+
     def _do_edit_param(self, index):
         def callback(value):
             try:
@@ -313,6 +320,9 @@ class ConfigWidget(QWidget):
                 QTimer.singleShot(10, self._do_fetch)
             except Exception as ex:
                 show_error('Parameter Change Error', 'Could request parameter change.', ex, self)
+            else:
+                self._have_unsaved_changes = True
+                self.window().show_message('Click "Store" to make your configuration changes persistent')
 
         try:
             win = ConfigParamEditWindow(self, self._parameters[index], self._cli_iface, callback)
@@ -352,9 +362,11 @@ class ConfigWidget(QWidget):
 
     def _do_store(self):
         self._cli_iface.store_all_config_params(self._show_callback_result)
+        self._have_unsaved_changes = False
 
     def _do_erase(self):
         self._cli_iface.erase_all_config_params(self._show_callback_result)
+        self._have_unsaved_changes = False
 
 
 class CLIWidget(QWidget):
@@ -455,6 +467,18 @@ class ControlPanelWindow(QDialog):
 
         self.setLayout(layout)
         self.resize(400, 400)
+
+    def closeEvent(self, close_event):
+        if self._config_widget.have_unsaved_changes:
+            if request_confirmation('Save changes?',
+                                    'You made changes to the adapter configuration that were not saved. '
+                                    'Do you want to go back and save them?',
+                                    parent=self):
+                close_event.ignore()
+                self._tab_widget.setCurrentWidget(self._config_widget)
+                return
+
+        super(ControlPanelWindow, self).closeEvent(close_event)
 
     def show_message(self, text, *fmt, duration=0):
         self._status_bar.showMessage(text % fmt, duration * 1000)

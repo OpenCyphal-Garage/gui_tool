@@ -39,6 +39,8 @@ def show_error(title, text, informative_text, parent=None, blocking=False):
         mbox.show()     # Not exec() because we don't want it to block!
 
 
+# FIXME TODO: MAKE SURE THIS DOESN'T BLOCK THE MAIN EVENT LOOP IN ALL SCENARIOS
+# The documentation is unclear about this ^
 def request_confirmation(title, text, parent=None):
     reply = QMessageBox(parent).question(parent, title, text, QMessageBox().Yes | QMessageBox().No)
     return reply == QMessageBox().Yes
