@@ -322,7 +322,9 @@ class ConfigWidget(QWidget):
                 show_error('Parameter Change Error', 'Could request parameter change.', ex, self)
             else:
                 self._have_unsaved_changes = True
-                self.window().show_message('Click "Store" to make your configuration changes persistent')
+                # noinspection PyCallByClass,PyTypeChecker
+                QTimer.singleShot(2000, lambda:
+                    self.window().show_message('Click "Store" to make your configuration changes persistent'))
 
         try:
             win = ConfigParamEditWindow(self, self._parameters[index], self._cli_iface, callback)
