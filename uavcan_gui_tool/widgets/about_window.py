@@ -21,7 +21,7 @@ Cross-platform application for <a href="http://uavcan.org/">UAVCAN bus</a> manag
 
 This application is distributed under the terms of the MIT software license. The source repository and the bug \
 tracker are located at <a href="https://github.com/UAVCAN/gui_tool">https://github.com/UAVCAN/gui_tool</a>.
-'''.format('.'.join(map(str, __version__)), uavcan.__version__)).strip().replace('\n', '\n<br/>')
+'''.format('.'.join(map(str, __version__)))).strip().replace('\n', '\n<br/>')
 
 
 def _list_3rd_party():
