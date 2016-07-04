@@ -437,9 +437,13 @@ class MainWindow(QMainWindow):
 
     def _show_node_window(self, node_id):
         if node_id in self._node_windows:
-            self._node_windows[node_id].close()
-            self._node_windows[node_id].setParent(None)
-            self._node_windows[node_id].deleteLater()
+            # noinspection PyBroadException
+            try:
+                self._node_windows[node_id].close()
+                self._node_windows[node_id].setParent(None)
+                self._node_windows[node_id].deleteLater()
+            except Exception:
+                pass    # Sometimes fails with "wrapped C/C++ object of type NodePropertiesWindow has been deleted"
             del self._node_windows[node_id]
 
         w = NodePropertiesWindow(self, self._node, node_id, self._file_server_widget,
