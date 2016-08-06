@@ -194,6 +194,11 @@ class ConsoleManager:
             except ImportError:
                 pass
 
+            import functools
+            self._context.append(InternalObjectDescriptor('functools', functools, 'Imported module "functools"'))
+            self._context.append(InternalObjectDescriptor('partial', functools.partial, 'functools.partial'))
+            self._context.append(InternalObjectDescriptor('reduce', functools.reduce, 'functools.reduce'))
+
         return self._context
 
     def _get_kernel_manager(self):

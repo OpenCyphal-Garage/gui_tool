@@ -382,12 +382,30 @@ class MainWindow(QMainWindow):
             active_handles.append(sub_handle)
             return sub_handle
 
+        def periodic(period_sec, callback):
+            """
+            Calls the specified callback with the specified time interval.
+            """
+            handle = self._node.periodic(period_sec, callback)
+            active_handles.append(handle)
+            return handle
+
+        def defer(delay_sec, callback):
+            """
+            Calls the specified callback after the specified amount of time.
+            """
+            handle = self._node.defer(delay_sec, callback)
+            active_handles.append(handle)
+            return handle
+
         def stop():
             """
-            Stops all periodic broadcasts (see broadcast()) and terminates all subscriptions (see subscribe()).
+            Stops all periodic broadcasts (see broadcast()), terminates all subscriptions (see subscribe()),
+            and cancels all deferred and periodic calls (see defer(), periodic()).
             """
             for h in active_handles:
                 try:
+                    logger.debug('Removing handle %r', h)
                     h.remove()
                 except Exception:
                     pass
@@ -415,8 +433,12 @@ class MainWindow(QMainWindow):
                                      'Broadcasts UAVCAN messages, once or periodically'),
             InternalObjectDescriptor('subscribe', subscribe,
                                      'Receives UAVCAN messages'),
+            InternalObjectDescriptor('periodic', periodic,
+                                     'Invokes a callback from the node thread with the specified time interval'),
+            InternalObjectDescriptor('defer', defer,
+                                     'Invokes a callback from the node thread once after the specified timeout'),
             InternalObjectDescriptor('stop', stop,
-                                     'Stops all periodic broadcasts and terminates all subscriptions'),
+                                     'Stops all ongoing tasks of broadcast(), subscribe(), defer(), periodic()'),
             InternalObjectDescriptor('print_yaml', print_yaml,
                                      'Prints UAVCAN entities in YAML format'),
             InternalObjectDescriptor('uavcan', uavcan,
