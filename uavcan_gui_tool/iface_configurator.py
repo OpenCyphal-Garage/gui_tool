@@ -12,11 +12,20 @@ import time
 import threading
 import copy
 from .widgets import show_error, get_monospace_font
-from PyQt5.QtWidgets import QDialog, QSpinBox, QComboBox, QLineEdit, QPushButton, QLabel, QVBoxLayout, QCompleter
+from PyQt5.QtWidgets import QDialog, QSpinBox, QComboBox, QPushButton, QLabel, QVBoxLayout, QCompleter, QGroupBox
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QIntValidator
 from logging import getLogger
 from collections import OrderedDict
 from itertools import count
+
+
+STANDARD_BAUD_RATES = 9600, 115200, 460800, 921600, 1000000, 3000000
+DEFAULT_BAUD_RATE = 115200
+assert DEFAULT_BAUD_RATE in STANDARD_BAUD_RATES
+
+
+RUNNING_ON_LINUX = 'linux' in sys.platform.lower()
 
 
 logger = getLogger(__name__)
@@ -43,13 +52,13 @@ def _linux_parse_ip_link_show(out_ifaces):
         f.seek(0)
         out = f.read().decode()
 
-    return re.findall(r'\d+?: ([a-z0-9]+?):\ <[^>]*UP[^>]*>.*\n *link/can', out) + out_ifaces
+    return re.findall(r'\d+?: ([a-z0-9]+?): <[^>]*UP[^>]*>.*\n *link/can', out) + out_ifaces
 
 
 def list_ifaces():
     """Returns dictionary, where key is description, value is the OS assigned name of the port"""
     logger.debug('Updating iface list...')
-    if 'linux' in sys.platform.lower():
+    if RUNNING_ON_LINUX:
         # Linux system
         ifaces = glob.glob('/dev/serial/by-id/*')
         # noinspection PyBroadException
@@ -112,6 +121,7 @@ def run_iface_config_window(icon):
     win.setWindowTitle('CAN Interface Configuration')
     win.setWindowIcon(icon)
     win.setWindowFlags(Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+    win.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
     combo = QComboBox(win)
     combo.setEditable(True)
@@ -124,15 +134,35 @@ def run_iface_config_window(icon):
     combo_completer.setModel(combo.model())
     combo.setCompleter(combo_completer)
 
-    bitrate = QSpinBox()
+    bitrate = QSpinBox(win)
     bitrate.setMaximum(1000000)
     bitrate.setMinimum(10000)
     bitrate.setValue(1000000)
 
-    extra_args = QLineEdit()
-    extra_args.setFont(get_monospace_font())
+    baudrate = QComboBox(win)
+    baudrate.setEditable(True)
+    baudrate.setInsertPolicy(QComboBox.NoInsert)
+    baudrate.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+    baudrate.setFont(get_monospace_font())
+
+    baudrate_completer = QCompleter(win)
+    baudrate_completer.setModel(baudrate.model())
+    baudrate.setCompleter(baudrate_completer)
+
+    baudrate.setValidator(QIntValidator(min(STANDARD_BAUD_RATES), max(STANDARD_BAUD_RATES)))
+    baudrate.insertItems(0, map(str, STANDARD_BAUD_RATES))
+    baudrate.setCurrentText(str(DEFAULT_BAUD_RATE))
 
     ok = QPushButton('OK', win)
+
+    def update_slcan_options_visibility():
+        if RUNNING_ON_LINUX:
+            slcan_active = '/' in combo.currentText()
+        else:
+            slcan_active = True
+        slcan_group.setEnabled(slcan_active)
+
+    combo.currentTextChanged.connect(update_slcan_options_visibility)
 
     ifaces = None
 
@@ -168,13 +198,19 @@ def run_iface_config_window(icon):
 
     def on_ok():
         nonlocal result, kwargs
-        a = str(extra_args.text())
-        if a:
-            try:
-                kwargs = dict(eval(a))
-            except Exception as ex:
-                show_error('Invalid parameters', 'Could not parse optional arguments', ex, parent=win)
-                return
+        try:
+            baud_rate_value = int(baudrate.currentText())
+        except ValueError:
+            show_error('Invalid parameters', 'Could not parse baud rate', 'Please specify correct baud rate',
+                       parent=win)
+            return
+        if not (min(STANDARD_BAUD_RATES) <= baud_rate_value <= max(STANDARD_BAUD_RATES)):
+            show_error('Invalid parameters', 'Baud rate is out of range',
+                       'Baud rate value should be within [%s, %s]' %
+                       (min(STANDARD_BAUD_RATES), max(STANDARD_BAUD_RATES)),
+                       parent=win)
+            return
+        kwargs['baudrate'] = baud_rate_value
         kwargs['bitrate'] = int(bitrate.value())
         result_key = str(combo.currentText()).strip()
         if not result_key:
@@ -189,18 +225,27 @@ def run_iface_config_window(icon):
 
     ok.clicked.connect(on_ok)
 
-    layout = QVBoxLayout()
-    layout.addWidget(QLabel('Select CAN interface or serial port for SLCAN:'))
+    layout = QVBoxLayout(win)
+    layout.addWidget(QLabel('Select CAN interface'))
     layout.addWidget(combo)
-    layout.addWidget(QLabel('Interface bitrate (SLCAN only):'))
-    layout.addWidget(bitrate)
-    layout.addWidget(QLabel('Optional arguments (refer to PyUAVCAN for info):'))
-    layout.addWidget(extra_args)
+
+    slcan_group = QGroupBox('SLCAN adapter settings', win)
+    slcan_layout = QVBoxLayout(slcan_group)
+
+    slcan_layout.addWidget(QLabel('CAN bus bit rate:'))
+    slcan_layout.addWidget(bitrate)
+    slcan_layout.addWidget(QLabel('Adapter baud rate (not applicable to USB-CAN adapters):'))
+    slcan_layout.addWidget(baudrate)
+
+    slcan_group.setLayout(slcan_layout)
+
+    layout.addWidget(slcan_group)
     layout.addWidget(ok)
     layout.setSizeConstraint(layout.SetFixedSize)
     win.setLayout(layout)
 
     with BackgroundIfaceListUpdater() as iface_lister:
+        update_slcan_options_visibility()
         update_iface_list()
         timer = QTimer(win)
         timer.setSingleShot(False)
