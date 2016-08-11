@@ -6,6 +6,8 @@ UAVCAN GUI Tool
 
 UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN bus management and diagnostics.
 
+[**READ THE DOCUMENTATION HERE**](http://uavcan.org/GUI_Tool).
+
 Read installation instructions:
 
 - [**LINUX**](#installing-on-linux)
