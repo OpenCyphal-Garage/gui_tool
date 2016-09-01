@@ -530,6 +530,10 @@ def main():
 
             # Making sure the interface is alright
             node.spin(0.1)
+        except uavcan.transport.TransferError:
+            # allow unrecognized messages on startup:
+            logger.warn('UAVCAN Transfer Error occured on startup', exc_info=True)
+            break
         except Exception as ex:
             logger.error('UAVCAN node init failed', exc_info=True)
             show_error('Fatal error', 'Could not initialize UAVCAN node', ex, blocking=True)
