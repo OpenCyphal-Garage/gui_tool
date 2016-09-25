@@ -45,7 +45,7 @@ class PercentSlider(QWidget):
         layout.addWidget(self._zero_button)
         self.setLayout(layout)
 
-        self.setMinimumHeight(300)
+        self.setMinimumHeight(400)
 
     def zero(self):
         self._slider.setValue(0)
@@ -70,7 +70,7 @@ class ESCPanel(QDialog):
         self._bcast_timer.start(100)
         self._bcast_timer.timeout.connect(self._do_broadcast)
 
-        self._sliders = [PercentSlider(self) for _ in range(8)]
+        self._sliders = [PercentSlider(self) for _ in range(4)]
 
         self._num_sliders = QSpinBox(self)
         self._num_sliders.setMinimum(len(self._sliders))
@@ -88,6 +88,8 @@ class ESCPanel(QDialog):
 
         self._stop_all = make_icon_button('hand-stop-o', 'Zero all channels', self, text='Stop All',
                                           on_clicked=self._do_stop_all)
+
+        self._pause = make_icon_button('pause', 'Pause publishing', self, checkable=True, text='Pause')
 
         self._msg_viewer = QPlainTextEdit(self)
         self._msg_viewer.setReadOnly(True)
@@ -112,6 +114,7 @@ class ESCPanel(QDialog):
         controls_layout.addWidget(self._bcast_interval)
         controls_layout.addWidget(QLabel('sec', self))
         controls_layout.addStretch()
+        controls_layout.addWidget(self._pause)
         layout.addLayout(controls_layout)
 
         layout.addWidget(QLabel('Generated message:', self))
@@ -119,17 +122,21 @@ class ESCPanel(QDialog):
 
         self.setLayout(layout)
         self.setMinimumWidth(500)
+        self.resize(self.minimumWidth(), self.minimumHeight())
 
     def _do_broadcast(self):
         try:
-            msg = uavcan.equipment.esc.RawCommand()
-            for sl in self._sliders:
-                raw_value = sl.get_value() / 100
-                value = (-self.CMD_MIN if raw_value < 0 else self.CMD_MAX) * raw_value
-                msg.cmd.append(int(value))
+            if not self._pause.isChecked():
+                msg = uavcan.equipment.esc.RawCommand()
+                for sl in self._sliders:
+                    raw_value = sl.get_value() / 100
+                    value = (-self.CMD_MIN if raw_value < 0 else self.CMD_MAX) * raw_value
+                    msg.cmd.append(int(value))
 
-            self._node.broadcast(msg)
-            self._msg_viewer.setPlainText(uavcan.to_yaml(msg))
+                self._node.broadcast(msg)
+                self._msg_viewer.setPlainText(uavcan.to_yaml(msg))
+            else:
+                self._msg_viewer.setPlainText('Paused')
         except Exception as ex:
             self._msg_viewer.setPlainText('Publishing failed:\n' + str(ex))
 
