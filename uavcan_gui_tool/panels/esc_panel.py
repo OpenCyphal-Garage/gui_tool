@@ -19,18 +19,37 @@ PANEL_NAME = 'ESC Panel'
 
 logger = getLogger(__name__)
 
+_singleton = None
+
 
 class ESCPanel(QDialog):
     def __init__(self, parent, node):
         super(ESCPanel, self).__init__(parent)
-        self.setWindowTitle(self.WINDOW_NAME_PREFIX)
+        self.setWindowTitle('ESC Management Panel')
         self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self._node = node
 
+    def __del__(self):
+        global _singleton
+        _singleton = None
+
+    def closeEvent(self, event):
+        global _singleton
+        _singleton = None
+        super(ESCPanel, self).closeEvent(event)
+
 
 def spawn(parent, node):
-    pass
+    global _singleton
+    if _singleton is None:
+        _singleton = ESCPanel(parent, node)
+
+    _singleton.show()
+    _singleton.raise_()
+    _singleton.activateWindow()
+
+    return _singleton
 
 
 get_icon = partial(get_icon, 'asterisk')

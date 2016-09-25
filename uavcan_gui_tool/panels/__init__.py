@@ -24,9 +24,9 @@ class PanelDescriptor:
         except Exception:
             pass
 
-    def safe_spawn(self):
+    def safe_spawn(self, parent, node):
         try:
-            return self._module.spawn()
+            return self._module.spawn(parent, node)
         except Exception as ex:
             show_error('Panel error', 'Could not spawn panel', ex)
 
