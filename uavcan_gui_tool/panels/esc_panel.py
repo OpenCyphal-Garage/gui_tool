@@ -118,6 +118,7 @@ class ESCPanel(QDialog):
         layout.addWidget(self._msg_viewer)
 
         self.setLayout(layout)
+        self.setMinimumWidth(500)
 
     def _do_broadcast(self):
         try:
