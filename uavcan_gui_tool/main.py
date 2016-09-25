@@ -77,6 +77,8 @@ from .widgets.plotter import PlotterManager
 from .widgets.about_window import AboutWindow
 from .widgets.can_adapter_control_panel import spawn_window as spawn_can_adapter_control_panel
 
+from .panels import PANELS
+
 
 NODE_NAME = 'org.uavcan.gui_tool'
 
@@ -163,6 +165,21 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(new_subscriber_action)
         tools_menu.addAction(new_plotter_action)
         tools_menu.addAction(show_can_adapter_controls_action)
+
+        #
+        # Panels menu
+        #
+        panels_menu = self.menuBar().addMenu('&Panels')
+
+        for idx, panel in enumerate(PANELS):
+            action = QAction(panel.name, self)
+            icon = panel.get_icon()
+            if icon:
+                action.setIcon(icon)
+            if idx < 9:
+                action.setShortcut(QKeySequence('Ctrl+Shift+%d' % (idx + 1)))
+            action.triggered.connect(panel.safe_spawn)
+            panels_menu.addAction(action)
 
         #
         # Help menu
