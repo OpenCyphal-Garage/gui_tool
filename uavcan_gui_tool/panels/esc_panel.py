@@ -31,8 +31,16 @@ class PercentSlider(QWidget):
         self._slider = QSlider(Qt.Vertical, self)
         self._slider.setMinimum(-100)
         self._slider.setMaximum(100)
+        self._slider.setValue(0)
         self._slider.setTickInterval(100)
         self._slider.setTickPosition(QSlider.TicksBothSides)
+        self._slider.valueChanged.connect(lambda: self._spinbox.setValue(self._slider.value()))
+
+        self._spinbox = QSpinBox(self)
+        self._spinbox.setMinimum(-100)
+        self._spinbox.setMaximum(100)
+        self._spinbox.setValue(0)
+        self._spinbox.valueChanged.connect(lambda: self._slider.setValue(self._spinbox.value()))
 
         self._zero_button = make_icon_button('hand-stop-o', 'Zero setpoint', self, on_clicked=self.zero)
 
@@ -42,6 +50,7 @@ class PercentSlider(QWidget):
         sub_layout.addWidget(self._slider)
         sub_layout.addStretch()
         layout.addLayout(sub_layout)
+        layout.addWidget(self._spinbox)
         layout.addWidget(self._zero_button)
         self.setLayout(layout)
 
@@ -55,6 +64,8 @@ class PercentSlider(QWidget):
 
 
 class ESCPanel(QDialog):
+    DEFAULT_INTERVAL = 0.1
+
     CMD_BIT_LENGTH = uavcan.get_uavcan_data_type(uavcan.equipment.esc.RawCommand().cmd).value_type.bitlen
     CMD_MAX = 2 ** (CMD_BIT_LENGTH - 1) - 1
     CMD_MIN = -(2 ** (CMD_BIT_LENGTH - 1))
@@ -65,10 +76,6 @@ class ESCPanel(QDialog):
         self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self._node = node
-
-        self._bcast_timer = QTimer(self)
-        self._bcast_timer.start(100)
-        self._bcast_timer.timeout.connect(self._do_broadcast)
 
         self._sliders = [PercentSlider(self) for _ in range(4)]
 
@@ -82,7 +89,7 @@ class ESCPanel(QDialog):
         self._bcast_interval.setMinimum(0.01)
         self._bcast_interval.setMaximum(1.0)
         self._bcast_interval.setSingleStep(0.1)
-        self._bcast_interval.setValue(self._bcast_timer.interval() * 1e-3)
+        self._bcast_interval.setValue(self.DEFAULT_INTERVAL)
         self._bcast_interval.valueChanged.connect(
             lambda: self._bcast_timer.setInterval(self._bcast_interval.value() * 1e3))
 
@@ -97,6 +104,10 @@ class ESCPanel(QDialog):
         self._msg_viewer.setFont(get_monospace_font())
         self._msg_viewer.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self._msg_viewer.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        self._bcast_timer = QTimer(self)
+        self._bcast_timer.start(self.DEFAULT_INTERVAL * 1e3)
+        self._bcast_timer.timeout.connect(self._do_broadcast)
 
         layout = QVBoxLayout(self)
 
