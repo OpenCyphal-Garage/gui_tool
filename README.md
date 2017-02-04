@@ -92,7 +92,8 @@ If you have a choice, it is recommended to use Linux or Windows instead,
 as these ports are supported much better at the moment.
 
 ### Homebrew option
-* Install the Homebrew package manager for OSX: 
+
+* Install the Homebrew package manager for OSX.
 * Run the following commands:
 
 ```bash
@@ -103,6 +104,7 @@ uavcan_gui_tool
 ```
 
 ### MacPorts option
+
 Install XCode from App Store, install MacPorts from <https://www.macports.org/install.php>,
 then run the commands below.
 If you're prompted to install Command Line Developer Tools, agree.
