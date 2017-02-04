@@ -91,6 +91,18 @@ Other than that, everything appears to function more or less correctly.
 If you have a choice, it is recommended to use Linux or Windows instead,
 as these ports are supported much better at the moment.
 
+### Homebrew option
+* Install the Homebrew package manager for OSX: 
+* Run the following commands:
+
+```bash
+brew install python3
+pip3 install PyQt5
+pip3 install git+https://github.com/UAVCAN/gui_tool@master
+uavcan_gui_tool
+```
+
+### MacPorts option
 Install XCode from App Store, install MacPorts from <https://www.macports.org/install.php>,
 then run the commands below.
 If you're prompted to install Command Line Developer Tools, agree.
@@ -100,8 +112,6 @@ sudo port selfupdate
 sudo port install curl-ca-bundle py35-pip py35-pyqt5 py35-numpy
 sudo python3.5 -m pip install git+https://github.com/UAVCAN/gui_tool@master
 ```
-
-If you're using Homebrew or some other package manager, you know what to do.
 
 We would like to provide prebuilt application packages instead of the mess above.
 Contributions adding this capability would be welcome.
