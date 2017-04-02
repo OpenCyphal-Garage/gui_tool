@@ -270,6 +270,35 @@ class MainWindow(QMainWindow):
             callback = callback or print_yaml
             return self._node.request(payload, server_node_id, callback, priority=priority, timeout=timeout)
 
+        def serve(uavcan_type, callback):
+            """
+            Registers a service server. The callback will be invoked every time the local node receives a
+            service request of the specified type. The callback accepts an uavcan.Event object
+            (refer to the PyUAVCAN documentation for more info), and returns the response object.
+            Example:
+                >>> def serve_acs(e):
+                >>>     print_yaml(e.request)
+                >>>     return uavcan.protocol.AccessCommandShell.Response()
+                >>> serve(uavcan.protocol.AccessCommandShell, serve_acs)
+            Args:
+                uavcan_type:    UAVCAN service type to serve requests of.
+                callback:       Service callback with the business logic, see above.
+            """
+            if uavcan_type.kind != uavcan_type.KIND_SERVICE:
+                raise RuntimeError('Expected a service type, got a different kind')
+
+            def process_callback(e):
+                try:
+                    return callback(e)
+                except Exception:
+                    logger.error('Unhandled exception in server callback for %r, server terminated',
+                                 uavcan_type, exc_info=True)
+                    sub_handle.remove()
+
+            sub_handle = self._node.add_handler(uavcan_type, process_callback)
+            active_handles.append(sub_handle)
+            return sub_handle
+
         def broadcast(payload, priority=None, interval=None, count=None, duration=None):
             """
             Broadcasts messages, either once or periodically in the background.
@@ -357,6 +386,9 @@ class MainWindow(QMainWindow):
             if (count is None and duration is None) and on_end is not None:
                 raise RuntimeError('on_end is set, but it will never be called because the subscription has '
                                    'no termination condition')
+
+            if uavcan_type.kind != uavcan_type.KIND_MESSAGE:
+                raise RuntimeError('Expected a message type, got a different kind')
 
             callback = callback or print_yaml
 
@@ -446,6 +478,8 @@ class MainWindow(QMainWindow):
                                      'Object that stores information about nodes currently available on the bus'),
             InternalObjectDescriptor('request', request,
                                      'Sends UAVCAN request transfers to other nodes'),
+            InternalObjectDescriptor('serve', serve,
+                                     'Serves UAVCAN service requests'),
             InternalObjectDescriptor('broadcast', broadcast,
                                      'Broadcasts UAVCAN messages, once or periodically'),
             InternalObjectDescriptor('subscribe', subscribe,
