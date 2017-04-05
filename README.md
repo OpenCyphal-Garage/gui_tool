@@ -77,6 +77,8 @@ Then, place the `*.pfx` file containing the code signing certificate in the oute
 Having done that, execute the following (the script will prompt you for password to read the certificate file):
 
 ```dos
+python -m pip uninstall -y uavcan           # This is needed to ensure clean environment
+python -m pip uninstall -y uavcan_gui_tool
 python setup.py install
 python setup.py bdist_msi
 ```
