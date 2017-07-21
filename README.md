@@ -135,5 +135,4 @@ the distribution server.
 
 ### Code style
 
-The code should be formatted in compliance with [PEP8](https://www.python.org/dev/peps/pep-0008/),
-with one exception: line length must not exceed 120 characters (PEP8 requires 79).
+Please follow the [Zubax Python Coding Conventions](https://kb.zubax.com/x/_oAh).
