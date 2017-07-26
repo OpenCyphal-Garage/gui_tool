@@ -280,20 +280,49 @@ class Controls(QGroupBox):
         remote_fw_file = os.path.basename(fw_file)
         logger.info('Firmware file remote path: %r', remote_fw_file)
 
+        deferred_request_handle = None
+        node_status_handle = None
+        num_remaining_requests = 4
+
+        def on_success_or_timeout():
+            nonlocal deferred_request_handle
+            nonlocal node_status_handle
+
+            if deferred_request_handle is not None:
+                deferred_request_handle.remove()
+                deferred_request_handle = None
+            if node_status_handle is not None:
+                node_status_handle.remove()
+                node_status_handle = None
+
         # Sending update requests
         def on_response(e):
+            nonlocal deferred_request_handle
+
+            assert deferred_request_handle is None
+
+            deferred_request_handle = self._node.defer(2, send_request)
+
             if e is None:
                 self.window().show_message('One of firmware update requests has timed out')
             else:
                 logger.info('Firmware update response: %s', e.response)
                 self.window().show_message('Firmware update response: %s', e.response)
-            if e is None or e.response.error != e.response.ERROR_IN_PROGRESS:
-                self._node.defer(2, send_request)
 
-        num_remaining_requests = 4
+                if e.response.error == e.response.ERROR_IN_PROGRESS:
+                    on_success_or_timeout()
+
+        def on_node_status(e):
+            if e.transfer.source_node_id == self._target_node_id and e.message.mode == e.message.MODE_SOFTWARE_UPDATE \
+            and e.message.health < e.message.HEALTH_ERROR:
+                on_success_or_timeout()
 
         def send_request():
             nonlocal num_remaining_requests
+            nonlocal deferred_request_handle
+
+            deferred_request_handle = None
+
             if num_remaining_requests > 0:
                 num_remaining_requests -= 1
                 request = uavcan.protocol.file.BeginFirmwareUpdate.Request(
@@ -304,7 +333,10 @@ class Controls(QGroupBox):
                     self._node.request(request, self._target_node_id, on_response, priority=REQUEST_PRIORITY)
                 except Exception as ex:
                     show_error('Firmware update error', 'Could not send firmware update request', ex, self)
+            else:
+                on_success_or_timeout()
 
+        node_status_handle = self._node.add_handler(uavcan.protocol.NodeStatus, on_node_status)
         send_request()  # Kickstarting the process, it will continue in the background
 
 
