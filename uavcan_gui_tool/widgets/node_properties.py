@@ -284,7 +284,7 @@ class Controls(QGroupBox):
         node_status_handle = None
         num_remaining_requests = 4
 
-        def success():
+        def on_success_or_timeout():
             nonlocal deferred_request_handle
             nonlocal node_status_handle
 
@@ -310,11 +310,12 @@ class Controls(QGroupBox):
                 self.window().show_message('Firmware update response: %s', e.response)
 
                 if e.response.error == e.response.ERROR_IN_PROGRESS:
-                    success()
+                    on_success_or_timeout()
 
         def on_node_status(e):
-            if e.transfer.source_node_id == self._target_node_id and e.message.mode == e.message.MODE_SOFTWARE_UPDATE and e.message.health < e.message.HEALTH_ERROR:
-                success()
+            if e.transfer.source_node_id == self._target_node_id and e.message.mode == e.message.MODE_SOFTWARE_UPDATE \
+            and e.message.health < e.message.HEALTH_ERROR:
+                on_success_or_timeout()
 
         def send_request():
             nonlocal num_remaining_requests
@@ -332,6 +333,8 @@ class Controls(QGroupBox):
                     self._node.request(request, self._target_node_id, on_response, priority=REQUEST_PRIORITY)
                 except Exception as ex:
                     show_error('Firmware update error', 'Could not send firmware update request', ex, self)
+            else:
+                on_success_or_timeout()
 
         node_status_handle = self._node.add_handler(uavcan.protocol.NodeStatus, on_node_status)
         send_request()  # Kickstarting the process, it will continue in the background
