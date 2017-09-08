@@ -76,9 +76,8 @@ from .widgets.subscriber import SubscriberWindow
 from .widgets.plotter import PlotterManager
 from .widgets.about_window import AboutWindow
 from .widgets.can_adapter_control_panel import spawn_window as spawn_can_adapter_control_panel
-
+from .widgets.motor_efficient_analysis import AnalysisMainWindow
 from .panels import PANELS
-
 
 NODE_NAME = 'org.uavcan.gui_tool'
 
@@ -133,6 +132,12 @@ class MainWindow(QMainWindow):
         #
         # Tools menu
         #
+
+        show_motor_efficiency_analysis_action = QAction(get_icon('flash'), '&Motor Efficiency Analysis', self)
+        show_motor_efficiency_analysis_action.setShortcut(QKeySequence('Ctrl+Shift+M'))
+        show_motor_efficiency_analysis_action.setStatusTip('Perform Motor Efficiency Analysis')
+        show_motor_efficiency_analysis_action.triggered.connect(self._show_motor_efficiency_analysis_configure)
+
         show_bus_monitor_action = QAction(get_icon('bus'), '&Bus Monitor', self)
         show_bus_monitor_action.setShortcut(QKeySequence('Ctrl+Shift+B'))
         show_bus_monitor_action.setStatusTip('Open bus monitor window')
@@ -165,6 +170,7 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(new_subscriber_action)
         tools_menu.addAction(new_plotter_action)
         tools_menu.addAction(show_can_adapter_controls_action)
+        tools_menu.addAction(show_motor_efficiency_analysis_action)
 
         #
         # Panels menu
@@ -346,9 +352,9 @@ class MainWindow(QMainWindow):
             do_broadcast()
 
             if interval is not None:
-                num_broadcasted = 1         # The first was broadcasted before the job was launched
+                num_broadcasted = 1  # The first was broadcasted before the job was launched
                 if duration is None:
-                    duration = 3600 * 24 * 365 * 1000       # See you in 1000 years
+                    duration = 3600 * 24 * 365 * 1000  # See you in 1000 years
                 deadline = time.monotonic() + duration
 
                 def process_next():
@@ -500,6 +506,9 @@ class MainWindow(QMainWindow):
                                      'Sends a raw CAN frame'),
         ]
 
+    def _show_motor_efficiency_analysis_configure(self):
+        AnalysisMainWindow(self).show()
+
     def _show_console_window(self):
         try:
             self._console_manager.show_console_window(self)
@@ -516,7 +525,7 @@ class MainWindow(QMainWindow):
                 self._node_windows[node_id].setParent(None)
                 self._node_windows[node_id].deleteLater()
             except Exception:
-                pass    # Sometimes fails with "wrapped C/C++ object of type NodePropertiesWindow has been deleted"
+                pass  # Sometimes fails with "wrapped C/C++ object of type NodePropertiesWindow has been deleted"
             del self._node_windows[node_id]
 
         w = NodePropertiesWindow(self, self._node, node_id, self._file_server_widget,

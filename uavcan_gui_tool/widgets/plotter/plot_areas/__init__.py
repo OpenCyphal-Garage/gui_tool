@@ -61,8 +61,10 @@ def add_crosshair(plot, render_measurements, color=Qt.gray):
 
 from .yt import PlotAreaYTWidget
 from .xy import PlotAreaXYWidget
+from .efficiency import PlotEfficientWidget
 
 PLOT_AREAS = OrderedDict([
     ('Y-T plot', PlotAreaYTWidget),
     ('X-Y plot', PlotAreaXYWidget),
+    ('Efficiency analysis plot',PlotEfficientWidget)
 ])

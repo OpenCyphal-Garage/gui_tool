@@ -10,8 +10,6 @@ import logging
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel
-
 from ....thirdparty.pyqtgraph import PlotWidget, mkPen
 from . import AbstractPlotArea, add_crosshair
 from ... import make_icon_button
@@ -19,7 +17,7 @@ from ... import make_icon_button
 
 logger = logging.getLogger(__name__)
 
-#
+
 class CurveContainer:
     MAX_DATA_POINTS = 200000
 
@@ -51,12 +49,13 @@ class CurveContainer:
         self.plot.setData(self.x, self.y, pen=self.pen)
 
 
-class PlotAreaYTWidget(QWidget, AbstractPlotArea):
+class PlotEfficientWidget(QWidget, AbstractPlotArea):
     INITIAL_X_RANGE = 120
     MAX_CURVES_PER_EXTRACTOR = 9
 
     def __init__(self, parent, display_measurements):
-        super(PlotAreaYTWidget, self).__init__(parent)
+        logger.info("---PlotAreaYTWidget init()")
+        super(PlotEfficientWidget, self).__init__(parent)
 
         self._extractor_associations = {}       # Extractor : plots
         self._max_x = 0
@@ -69,7 +68,8 @@ class PlotAreaYTWidget(QWidget, AbstractPlotArea):
 
         self._plot = PlotWidget(self, background=QColor(Qt.black))
         self._plot.showButtons()
-        self._plot.enableAutoRange()
+        # self._plot.enableAutoRange()
+        self._plot.setYRange(1000,20000)
         self._plot.showGrid(x=True, y=True, alpha=0.4)
         self._legend = None
         # noinspection PyArgumentList
