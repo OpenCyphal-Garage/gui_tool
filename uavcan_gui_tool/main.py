@@ -76,7 +76,7 @@ from .widgets.subscriber import SubscriberWindow
 from .widgets.plotter import PlotterManager
 from .widgets.about_window import AboutWindow
 from .widgets.can_adapter_control_panel import spawn_window as spawn_can_adapter_control_panel
-from .widgets.motor_efficient_analysis import AnalysisMainWindow
+from .widgets.motor_efficient_analysis import analysisManager
 from .panels import PANELS
 
 NODE_NAME = 'org.uavcan.gui_tool'
@@ -174,7 +174,7 @@ class MainWindow(QMainWindow):
 
         #
         # Panels menu
-        #
+
         panels_menu = self.menuBar().addMenu('&Panels')
 
         for idx, panel in enumerate(PANELS):
@@ -507,7 +507,9 @@ class MainWindow(QMainWindow):
         ]
 
     def _show_motor_efficiency_analysis_configure(self):
-        AnalysisMainWindow(self).show()
+        self._analysisManager=analysisManager(self,self._node)
+        self._analysisWindows=self._analysisManager._spawnAnalysisWindow()
+        self._analysisManager._spawnPlotsWindow()
 
     def _show_console_window(self):
         try:

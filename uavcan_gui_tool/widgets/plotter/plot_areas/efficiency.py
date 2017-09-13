@@ -66,10 +66,10 @@ class PlotEfficientWidget(QWidget, AbstractPlotArea):
 
         self._clear_button = make_icon_button('eraser', 'Clear all curves', self, on_clicked=self._do_clear)
 
-        self._plot = PlotWidget(self, background=QColor(Qt.black))
+        self._plot = PlotWidget(self, background=QColor(Qt.white))
         self._plot.showButtons()
         # self._plot.enableAutoRange()
-        self._plot.setYRange(1000,20000)
+        self._plot.setYRange(500,3000)
         self._plot.showGrid(x=True, y=True, alpha=0.4)
         self._legend = None
         # noinspection PyArgumentList
