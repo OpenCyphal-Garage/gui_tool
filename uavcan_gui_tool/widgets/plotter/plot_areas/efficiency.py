@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt
 from ....thirdparty.pyqtgraph import PlotWidget, mkPen
 from . import AbstractPlotArea, add_crosshair
 from ... import make_icon_button
-
+from .yt import PlotAreaYTWidget
 
 logger = logging.getLogger(__name__)
 
@@ -49,60 +49,14 @@ class CurveContainer:
         self.plot.setData(self.x, self.y, pen=self.pen)
 
 
-class PlotEfficientWidget(QWidget, AbstractPlotArea):
-    INITIAL_X_RANGE = 120
-    MAX_CURVES_PER_EXTRACTOR = 9
-
+class PlotEfficientWidget(PlotAreaYTWidget):
     def __init__(self, parent, display_measurements):
-        logger.info("---PlotAreaYTWidget init()")
-        super(PlotEfficientWidget, self).__init__(parent)
+        super(PlotEfficientWidget, self).__init__(parent, display_measurements)
 
-        self._extractor_associations = {}       # Extractor : plots
-        self._max_x = 0
 
-        self._autoscroll_checkbox = make_icon_button('angle-double-right',
-                                                     'Scroll the plot automatically as new data arrives', self,
-                                                     checkable=True, checked=True)
-
-        self._clear_button = make_icon_button('eraser', 'Clear all curves', self, on_clicked=self._do_clear)
-
-        self._plot = PlotWidget(self, background=QColor(Qt.white))
-        self._plot.showButtons()
-        # self._plot.enableAutoRange()
-        self._plot.setYRange(500,3000)
-        self._plot.showGrid(x=True, y=True, alpha=0.4)
-        self._legend = None
-        # noinspection PyArgumentList
-        self._plot.setRange(xRange=(0, self.INITIAL_X_RANGE), padding=0)
-
-        layout = QHBoxLayout(self)
-
-        controls_layout = QVBoxLayout(self)
-        controls_layout.addWidget(self._clear_button)
-        controls_layout.addWidget(self._autoscroll_checkbox)
-        controls_layout.addStretch(1)
-        layout.addLayout(controls_layout)
-
-        layout.addWidget(self._plot, 1)
-
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
-
-        # Crosshair
-        def _render_measurements(cur, ref):
-            text = 'time %.6f sec,  y %.6f' % cur
-            if ref is None:
-                return text
-            dt = cur[0] - ref[0]
-            dy = cur[1] - ref[1]
-            if abs(dt) > 1e-12:
-                freq = '%.6f' % abs(1 / dt)
-            else:
-                freq = 'inf'
-            display_measurements(text + ';' + ' ' * 4 + 'dt %.6f sec,  freq %s Hz,  dy %.6f' % (dt, freq, dy))
-
-        display_measurements('Hover to sample Time/Y, click to set new reference')
-        add_crosshair(self._plot, _render_measurements)
+class PlotThrustWidget(PlotEfficientWidget):
+    def __init__(self, parent, display_measurements):
+        super(PlotThrustWidget, self).__init__(parent, display_measurements)
 
     def _forge_curves(self, how_many, base_color):
         if how_many > 1 and self._legend is None:
