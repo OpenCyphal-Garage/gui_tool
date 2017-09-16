@@ -24,7 +24,6 @@ class CurveContainer:
     MAX_DATA_POINTS = 200000
 
     def __init__(self, plot, base_color, darkening, pen):
-        logger.info("---Invoke CurveContainer init()")
         self.base_color = base_color
         self.darkening = darkening
         self.pen = pen

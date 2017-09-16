@@ -509,7 +509,7 @@ class MainWindow(QMainWindow):
     def _show_motor_efficiency_analysis_configure(self):
         self._analysisManager=analysisManager(self,self._node)
         self._analysisWindows=self._analysisManager._spawnAnalysisWindow()
-        self._analysisPlots=self._analysisManager._spawnPlotsWindow()
+        # self._analysisPlots=self._analysisManager._spawnPlotsWindow()
 
     def _show_console_window(self):
         try:

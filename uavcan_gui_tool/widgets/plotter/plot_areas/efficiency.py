@@ -52,96 +52,15 @@ class CurveContainer:
 class PlotEfficientWidget(PlotAreaYTWidget):
     def __init__(self, parent, display_measurements):
         super(PlotEfficientWidget, self).__init__(parent, display_measurements)
+        self.setBackgroundColor(QColor("white"))
+
+    def setBackgroundColor(self,color):
+        self._plot.setBackground(color)
 
 
 class PlotThrustWidget(PlotEfficientWidget):
     def __init__(self, parent, display_measurements):
         super(PlotThrustWidget, self).__init__(parent, display_measurements)
 
-    def _forge_curves(self, how_many, base_color):
-        if how_many > 1 and self._legend is None:
-            self._legend = self._plot.addLegend()
-
-        out = []
-        darkening_values = [100, 200, 300]
-        dash_patterns = (
-            [],
-            [3, 3],
-            [10, 3]
-        )
-        for idx in range(how_many):
-            logger.info('Adding new curve')
-            try:
-                darkening = darkening_values[idx % len(darkening_values)]
-                pattern = dash_patterns[int(idx / len(darkening_values)) % len(dash_patterns)]
-                pen = mkPen(color=base_color.darker(darkening), width=1, dash=pattern)
-                plot = self._plot.plot(name=str(idx), pen=pen)
-                out.append(CurveContainer(plot, base_color, darkening, pen))
-            except Exception:
-                logger.error('Could not add curve', exc_info=True)
-        return out
-
-    def add_value(self, extractor, x, y):
-        try:
-            num_curves = len(y)
-        except Exception:
-            num_curves = 1
-            y = y,          # do you love Python as I do
-
-        # If number of curves changed, removing all plots from this extractor
-        if extractor in self._extractor_associations and num_curves != len(self._extractor_associations[extractor]):
-            self.remove_curves_provided_by_extractor(extractor)
-
-        # Creating curves if needed
-        if extractor not in self._extractor_associations:
-            # Techincally, we can plot as many curves as you want, but large number may indicate that smth is wrong
-            if num_curves > self.MAX_CURVES_PER_EXTRACTOR:
-                raise RuntimeError('%r curves is much too many' % num_curves)
-            self._extractor_associations[extractor] = self._forge_curves(num_curves, extractor.color)
-
-        # Actually plotting
-        for idx, curve in enumerate(self._extractor_associations[extractor]):
-            curve.add_point(x, float(y[idx]))
-            curve.set_color(extractor.color)
-
-        # Updating the rightmost value
-        self._max_x = max(self._max_x, x)
-
-    def remove_curves_provided_by_extractor(self, extractor):
-        try:
-            curves = self._extractor_associations[extractor]
-            del self._extractor_associations[extractor]
-            for c in curves:
-                self._plot.removeItem(c.plot)
-        except KeyError:
-            pass
-
-        if self._legend is not None:
-            self._legend.scene().removeItem(self._legend)
-            self._legend = None
-
-    def _do_clear(self):
-        for k in list(self._extractor_associations.keys()):
-            self.remove_curves_provided_by_extractor(k)
-
-    def reset(self):
-        self._do_clear()
-        self._max_x = 0
-        self._plot.enableAutoRange()
-        # noinspection PyArgumentList
-        self._plot.setRange(xRange=(0, self.INITIAL_X_RANGE), padding=0)
-
-    def update(self):
-        # Updating curves
-        for curves in self._extractor_associations.values():
-            for c in curves:
-                c.update()
-
-        # Updating view range
-        if self._autoscroll_checkbox.isChecked():
-            (xmin, xmax), _ = self._plot.viewRange()
-            diff = xmax - xmin
-            xmax = self._max_x
-            xmin = self._max_x - diff
-            # noinspection PyArgumentList
-            self._plot.setRange(xRange=(xmin, xmax), padding=0)
+    def setBackgroundColor(self,color):
+        self._plot.setBackground(color)
