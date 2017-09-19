@@ -77,7 +77,7 @@ class ESCPanel(QDialog):
 
         self._node = node
 
-        self._sliders = [PercentSlider(self) for _ in range(5)]
+        self._sliders = [PercentSlider(self) for _ in range(4)]
 
         self._num_sliders = QSpinBox(self)
         self._num_sliders.setMinimum(len(self._sliders))
@@ -137,13 +137,11 @@ class ESCPanel(QDialog):
     def _do_broadcast(self):
         try:
             if not self._pause.isChecked():
-                msg = uavcan.equipment.esc.RPMCommand()
+                msg = uavcan.equipment.esc.RawCommand()
                 for sl in self._sliders:
-                    # raw_value = sl.get_value() / 100100
-                    raw_value = sl.get_value()
-                    # value = (-self.CMD_MIN if raw_value < 0 else self.CMD_MAX) * raw_value
-                    value = (-30 if raw_value < 0 else 30) * raw_value
-                    msg.rpm.append(int(value))
+                    raw_value = sl.get_value() / 100
+                    value = (-self.CMD_MIN if raw_value < 0 else self.CMD_MAX) * raw_value
+                    msg.cmd.append(int(value))
 
                 self._node.broadcast(msg)
                 self._msg_viewer.setPlainText(uavcan.to_yaml(msg))

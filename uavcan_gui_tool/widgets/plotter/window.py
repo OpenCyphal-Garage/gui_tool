@@ -138,7 +138,7 @@ class PlotterWindow(QMainWindow):
 
                 for plc in self._plot_containers:
                     try:
-                        plc.process_transfer(timestamp=tr.ts_mono - self._base_time, tr=tr)      #process_transfer(timestamp,tr)
+                        plc.process_transfer(tr.ts_mono - self._base_time, tr)
                     except Exception:
                         logger.error('Plot container failed to process a transfer', exc_info=True)
 

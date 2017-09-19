@@ -54,7 +54,7 @@ class PlotEfficientWidget(PlotAreaYTWidget):
         super(PlotEfficientWidget, self).__init__(parent, display_measurements)
         self.setBackgroundColor(QColor("white"))
 
-    def setBackgroundColor(self,color):
+    def setBackgroundColor(self, color):
         self._plot.setBackground(color)
 
 
@@ -62,5 +62,5 @@ class PlotThrustWidget(PlotEfficientWidget):
     def __init__(self, parent, display_measurements):
         super(PlotThrustWidget, self).__init__(parent, display_measurements)
 
-    def setBackgroundColor(self,color):
+    def setBackgroundColor(self, color):
         self._plot.setBackground(color)

@@ -2,18 +2,18 @@ import logging
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel
 from PyQt5.QtCore import Qt
 
-
 logger = logging.getLogger(__name__)
-COLOR_WARNING="red"
-COLOR_INFO="blue"
-COLOR_SUCCESS="green"
+COLOR_WARNING = "red"
+COLOR_INFO = "blue"
+COLOR_SUCCESS = "green"
+
 
 class PlotContainerWidget(QWidget):
-    def __init__(self, parent, plot_area_class, active_data_types ,valueName):
+    def __init__(self, parent, plot_area_class, active_data_types, valueName):
         super(PlotContainerWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
-        self._valueName=valueName
-        self._value="N/A"
+        self.setAttribute(Qt.WA_DeleteOnClose)  # This is required to stop background timers!
+        self._valueName = valueName
+        self._value = "N/A"
         self._plot_area = plot_area_class(self, display_measurements=self.setWindowTitle)
 
         self.update = self._plot_area.update
@@ -22,7 +22,7 @@ class PlotContainerWidget(QWidget):
         self._active_data_types = active_data_types
         self._extractors = []
         self._how_to_label = QLabel('', self)
-        hLayoutMain=QHBoxLayout(self)
+        hLayoutMain = QHBoxLayout(self)
         self._valueLabel = QLabel("{}:{}".format(self._valueName, self._value))
         self._valueLabel.setFixedWidth(80)
         hLayoutMain.addWidget(self._valueLabel)
@@ -44,16 +44,16 @@ class PlotContainerWidget(QWidget):
         self.setMinimumHeight(150)
 
     def process_transfer(self, timestamp, tr):
-        message=tr.message
-        set_value_by_value_name={
-            "RPM":lambda:self.setValue(message.rpm),
-            "Current":lambda:self.setValue(message.current),
-            "Voltage":lambda:self.setValue(message.voltage),
+        message = tr.message
+        set_value_by_value_name = {
+            "RPM": lambda: self.setValue(message.rpm),
+            "Current": lambda: self.setValue(message.current),
+            "Voltage": lambda: self.setValue(message.voltage),
         }
         set_value_by_value_name[self._valueName]()
 
         for extractor in self._extractors:
-            if(extractor.extraction_expression.source=="sensors.thrust"):
+            if (extractor.extraction_expression.source == "sensors.thrust"):
                 print("thrust continue")
                 continue
             try:
@@ -65,32 +65,31 @@ class PlotContainerWidget(QWidget):
                 print(ex)
                 extractor.register_error()
 
-    def process_thrust(self,timestamp,value):
+    def process_thrust(self, timestamp, value):
         for extractor in self._extractors:
-            if(extractor.extraction_expression.source=="sensors.thrust"):
-                if(value =="N/A"):
+            if (extractor.extraction_expression.source == "sensors.thrust"):
+                if (value == "N/A"):
                     return
-                self._plot_area.add_value(extractor,timestamp,float(value))
+                self._plot_area.add_value(extractor, timestamp, float(value))
                 break
 
-    def setValue(self,value):
-        if(value!=""):
+    def setValue(self, value):
+        if (value != ""):
             # print("set {} Value: {}".format(self._valueName,value))
-            self._value=value
-            self._valueLabel.setText("{}:{}".format(self._valueName,self._value))
+            self._value = value
+            self._valueLabel.setText("{}:{}".format(self._valueName, self._value))
 
     #
     # style="warning" | "success" | "info"
     #
 
-    def setHowToLabel(self,text,style):
+    def setHowToLabel(self, text, style):
         self._how_to_label.setText(text)
-        if(style=="warning"):
-            self._how_to_label.setStyleSheet("QLabel {color: %s}"%(COLOR_WARNING))
-        elif (style=="success"):
+        if (style == "warning"):
+            self._how_to_label.setStyleSheet("QLabel {color: %s}" % (COLOR_WARNING))
+        elif (style == "success"):
             self._how_to_label.setStyleSheet("QLabel {color: %s}" % (COLOR_SUCCESS))
-        elif (style=="info"):
+        elif (style == "info"):
             self._how_to_label.setStyleSheet("QLabel {color: %s}" % (COLOR_INFO))
         else:
             logger.info("Failed to set howToLabel color: Unknown label type.")
-

@@ -12,14 +12,13 @@ from PyQt5.QtCore import Qt
 from .. import make_icon_button
 from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 
-
 logger = logging.getLogger(__name__)
 
 
 class PlotContainerWidget(QDockWidget):
     def __init__(self, parent, plot_area_class, active_data_types):
         super(PlotContainerWidget, self).__init__(parent)
-        self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
+        self.setAttribute(Qt.WA_DeleteOnClose)  # This is required to stop background timers!
 
         self.on_close = lambda: None
 
@@ -96,7 +95,7 @@ class PlotContainerWidget(QDockWidget):
                 if value is None:
                     continue
                 self._plot_area.add_value(extractor, timestamp, value)
-            except Exception as ex:
+            except Exception:
                 extractor.register_error()
 
     def closeEvent(self, qcloseevent):
