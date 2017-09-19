@@ -24,15 +24,16 @@ import serial.tools.list_ports
 from threading import Thread
 from queue import  Queue
 
-PLOT_TYPES = ("Acc", "RPM", "Torque", "Thrust", "ESC Power", "Efficiency", "Current")
+PLOT_TYPES = ("Acc", "RPM", "Torque", "Thrust", "ESC Power", "Efficiency", "Current","Voltage")
 MESSAGE_TYPE = "uavcan.equipment.esc.Status"
 MESSAGES = (
     "msg.error_count", "msg.voltage", "msg.current", "msg.temperature", "msg.rpm", "msg.power_rating_pct",
     "msg.esc_index")
 MESSAGES = (
-"sensors.acc", "msg.rpm", "sensors.torque", "sensors.thrust", "sensors.esc_power", "sensors.efficiency", "msg.current")
+"sensors.acc", "msg.rpm", "sensors.torque", "sensors.thrust", "sensors.esc_power", "sensors.efficiency", "msg.current",
+"msg.voltage")
 BOARDCAST_INTERVAL = 0.1
-RPM_MAX = 3000
+RPM_MAX = 8000
 RPM_MIN = 0
 __all__ = 'analysisManager'
 logger = getLogger(__name__)
@@ -59,7 +60,7 @@ class EscSlider(QWidget):
         self._escSlider.setMinimum(RPM_MIN)
         self._escSlider.setMaximum(RPM_MAX)
         self._escSlider.setValue(RPM_MIN)
-        self._escSlider.setTickInterval(100)
+        self._escSlider.setTickInterval(10)
         self._escSlider.valueChanged.connect(lambda: self._escSpinbox.setValue(self._escSlider.value()))
         self._escSpinbox.valueChanged.connect(lambda: self._escSlider.setValue(self._escSpinbox.value()))
         self._zeroButton = make_icon_button('hand-stop-o', 'Zero setpoint', self, on_clicked=self.zero)
@@ -68,6 +69,7 @@ class EscSlider(QWidget):
         vbox.addWidget(self._escSpinbox)
         vbox.addWidget(self._zeroButton)
         vbox.setAlignment(Qt.AlignCenter)
+        self.setLayout(vbox)
 
     def zero(self):
         self._escSlider.setValue(0)
@@ -76,7 +78,7 @@ class EscSlider(QWidget):
         return self._escSlider.value()
 
     def set_value(self, rpm):
-        print("set value:{}", rpm)
+        print("Set rpm:{}".format(rpm))
         self._escSlider.setValue(rpm)
 
 
@@ -84,7 +86,7 @@ class RecordWidget(QWidget):
     def __init__(self, parent, automatic):
         super(RecordWidget, self).__init__(parent)
         self._sampleCount = 0
-        self._savePath = "{}/analysisData/log-{}.csv".format(os.getcwd(),
+        self._savePath = "{}/log-{}.csv".format(os.getcwd(),
                                                              datetime
                                                              .datetime
                                                              .now()
@@ -100,22 +102,22 @@ class RecordWidget(QWidget):
         vbox = QVBoxLayout(self)
         self.setLayout(vbox)
         vbox.addWidget(QLabel("Record to CSV file:"))
-        hboxBtnGroup = QHBoxLayout(self)
+        vboxBtnGroup = QVBoxLayout(self)
 
         if self._automatic == False:
             self._takeSampleBtn = QPushButton(get_icon("camera"), "&Take Sample")
             self._takeSampleBtn.clicked.connect(self._takeSample)
-            hboxBtnGroup.addWidget(self._takeSampleBtn)
-            hboxBtnGroup.addStretch(1)
+            vboxBtnGroup.addWidget(self._takeSampleBtn)
+            vboxBtnGroup.addStretch(1)
 
         self._newLogBtn = QPushButton(get_icon("plus-circle"), "&New Log")
         self._newLogBtn.clicked.connect(self._getNewLogPath)
-        hboxBtnGroup.addWidget(self._newLogBtn)
-        hboxBtnGroup.addStretch(1)
+        vboxBtnGroup.addWidget(self._newLogBtn)
+        vboxBtnGroup.addStretch(1)
         self._cleanLogBtn = QPushButton(get_icon("eraser"), "&Clean Log")
         self._cleanLogBtn.clicked.connect(self._cleanLog)
-        hboxBtnGroup.addWidget(self._cleanLogBtn)
-        vbox.addLayout(hboxBtnGroup)
+        vboxBtnGroup.addWidget(self._cleanLogBtn)
+        vbox.addLayout(vboxBtnGroup)
         self._labelSampleCount = QLabel("{} samples saved in {}".format(self._sampleCount, self._savePath))
         self._labelSampleCount.setWordWrap(True)
         vbox.addWidget(self._labelSampleCount)
@@ -198,33 +200,32 @@ class AutomaticControlPanel(QWidget):
         self._recordWidget = RecordWidget(self, automatic=True)
         vbox.addWidget(self._recordWidget)
         hbox.addLayout(vbox)
-
         self.setLayout(hbox)
 
         self._spinbox_step = QSpinBox(self)
-        self._spinbox_step.setMinimum(10)
-        self._spinbox_step.setMaximum(500)
+        self._spinbox_step.setMinimum(1)
+        self._spinbox_step.setMaximum(1000)
         self._spinbox_step.setValue(100)
         vbox.addWidget(QLabel("Choose RPM increase step:"))
         vbox.addWidget(self._spinbox_step)
 
         self._spinbox_start = QSpinBox(self)
         self._spinbox_start.setMinimum(10)
-        self._spinbox_start.setMaximum(2500)
+        self._spinbox_start.setMaximum(8000)
         self._spinbox_start.setValue(500)
         vbox.addWidget(QLabel("Choose initial starting RPM:"))
         vbox.addWidget(self._spinbox_start)
 
         self._spinbox_end = QSpinBox(self)
         self._spinbox_end.setMinimum(10)
-        self._spinbox_end.setMaximum(5000)
+        self._spinbox_end.setMaximum(8000)
         self._spinbox_end.setValue(2500)
         vbox.addWidget(QLabel("Choose ending RPM:"))
         vbox.addWidget(self._spinbox_end)
 
         self._spinbox_period = QSpinBox(self)
         self._spinbox_period.setMinimum(0.8)
-        self._spinbox_period.setMaximum(100)
+        self._spinbox_period.setMaximum(1000)
         self._spinbox_period.setValue(1)
         vbox.addWidget(QLabel("Choose period:"))
         vbox.addWidget(self._spinbox_period)
@@ -248,7 +249,6 @@ class AutomaticControlPanel(QWidget):
         self._setValue(start)
         self._testTimer.timeout.connect(self._addRpm)
         self._setCtrBtnType("stop")
-        self._recordWidget._setPlotStyle(start=True)
 
 
 
@@ -256,7 +256,12 @@ class AutomaticControlPanel(QWidget):
         self._testTimer.stop()
         self._setValue(0)
         self._setCtrBtnType("start")
-        self._recordWidget._setPlotStyle(start=False)
+        # msgbox=QMessageBox(self)
+        # msgbox.setText("Motor test complete. Samples saved in {}".format(self._recordWidget._savePath))
+        # msgbox.setWindowTitle("Done")
+        # msgbox.setStyleSheet("QMessageBox {color: green;font-size:18px;}")
+        # msgbox.show()
+
 
     def _addRpm(self):
         if (time.time() > self._endtime):
@@ -291,7 +296,13 @@ class PlotsWidget(QWidget):
 
         self._active_data_types = set()
         self._base_time = time.monotonic()
+        self._active_plot=set()
+        self._plc_thrust=None
+        self._plc_rpm=None
+        self._plc_voltage=None
+        self._plc_current=None
         self._initUI()
+
 
 
 
@@ -309,28 +320,30 @@ class PlotsWidget(QWidget):
         self._plotsGroup.setLayout(self._vboxPlots)
         hboxPlotTypesChks = QHBoxLayout()
         self._vboxPlots.addLayout(hboxPlotTypesChks)
+        #add plot chkbox
+        self._rpmChkBox=None
         for type in PLOT_TYPES:
             chkBox = QCheckBox(type)
             chkBox.stateChanged.connect(partial(self._addOrDelPlot, type, chkBox))
             hboxPlotTypesChks.addWidget(chkBox)
-        #
-        # Main plot
-        #
+            if(type=="RPM"):
+                chkBox.setChecked(True)
+                print(self._plc_rpm)
+
+            if(type=="Current"):
+                chkBox.setChecked(True)
+
+            if(type=="Thrust"):
+                chkBox.setChecked(True)
 
         self._vboxPlots.addWidget(self._plotsGroup)
-        self._do_add_integrated_plot()
-
-        #
-        # Thrust plot
-        #
-        self._vboxPlots.addWidget(self._plotsGroup)
-        self._do_add_thrust_plot()
 
 
     def _do_add_integrated_plot(self):
 
         self._plc = PlotContainerWidget(self, PLOT_AREAS['Efficiency analysis plot'], self._active_data_types,"RPM")
         self._vboxPlots.addWidget(self._plc)
+        self._rpmChkBox.setChecked(True)        #Add rpm curve to integrated plot.
 
     def _do_add_thrust_plot(self):
         def remove():
@@ -343,6 +356,7 @@ class PlotsWidget(QWidget):
         color = QColor("green")
         expression = Expression("sensors.thrust")
         extractor = customExtractor("custom.data", expression, color)
+
         def done(extractor):
             self._plc_thrust._extractors.append(extractor)
             def remove():
@@ -354,8 +368,8 @@ class PlotsWidget(QWidget):
 
 
     def _do_reset(self):
-        self._base_time = time.monotonic()
 
+        self._base_time = time.monotonic()
         for plc in self._plot_containers:
             try:
                 plc.reset()
@@ -372,73 +386,84 @@ class PlotsWidget(QWidget):
         if not self._parent._pause_action.isChecked():
 
             tr = self._get_transfer()
-            # self._updateBusInfo(tr)
             tr.data_type_name=MESSAGE_TYPE
             tr.source_node_id=1
             self._active_data_types.add(MESSAGE_TYPE)
             try:
                 timestamp=tr.transfer.ts_monotonic-self._base_time
-                self._plc.setValue(tr.message.rpm)
-                self._plc_thrust.process_thrust(timestamp=timestamp,
-                                                    value=self._plc_thrust._value)
-                self._plc.process_transfer(timestamp=timestamp,
-                                               tr=tr)  # process_transfer(timestamp,tr)
+                for plot in self._active_plot:
+                    if(plot._valueName=="Thrust"):
+                        plot.process_thrust(timestamp=timestamp,
+                                                        value=self._plc_thrust._value)
+                    else:
+                        plot.process_transfer(timestamp=timestamp,
+                                              tr=tr)
+                    plot.update()
+
             except Exception:
                 logger.error('Plot container failed to process a transfer', exc_info=True)
-
-        try:
-            self._plc.update()
-            self._plc_thrust.update()
-        except Exception:
-            logger.error('Plot container failed to update', exc_info=True)
 
 
 
     def _addOrDelPlot(self, plotType, chkBox):
         print("add plot:" + plotType)
 
-        def done(extractor):
-            self._plc._extractors.append(extractor)
+        def done(extractor,targetPlc):
+            targetPlc._extractors.append(extractor)
 
-            # widget = ExtractorWidget(self._plc, extractor)
-            # self._plc._extractors_layout.addWidget(widget)
-
-            def remove():
+            def remove(plot,chkBox):
                 print("remove plot")
-                self._plc._plot_area.remove_curves_provided_by_extractor(extractor)
-                self._plc._extractors.remove(extractor)
-                # self._plc._extractors_layout.removeWidget(widget)
+                self._active_plot.remove(plot)
+                plot.setParent(None)
                 chkBox.stateChanged.disconnect()
                 chkBox.stateChanged.connect(partial(self._addOrDelPlot, plotType, chkBox))
-            # widget._type = plotType
-            # widget.on_remove = remove
             chkBox.stateChanged.disconnect()
-            chkBox.stateChanged.connect(remove)
+            chkBox.stateChanged.connect(partial(remove,targetPlc,chkBox))
+            self._active_plot.add(targetPlc)
 
         e = MESSAGES[PLOT_TYPES.index(plotType)]
-        if (e.startswith("msg.")):
-            color = QColor("black")
-            if (e == "msg.rpm"):
-                color = QColor("red")
-            expression = Expression(e)
-            extractor = Extractor(MESSAGE_TYPE, expression, [], color)
-            done(extractor)
-        else:
-            # todo Add Other Sensor type plot
-            color=QColor("black")
-            if(e == "sensors.thrust"):
-                color=QColor("green")
-            expression=Expression(e)
-            extractor = customExtractor("custom.data",expression,color)
-            done(extractor)
 
-    def setPlotStyle(self,start):
-        if not start:
-            self._plc_thrust._plot_area.setBackgroundColor(QColor("gray"))
-            self._plc._plot_area.setBackgroundColor(QColor("gray"))
+        def add_new_plot(color,valueName,e,how_to_label="",style="info"):
+
+            plotContainer=PlotContainerWidget(self,
+                                              PLOT_AREAS['Efficiency analysis plot'],
+                                              self._active_data_types,
+                                              valueName)
+            plotContainer.setHowToLabel(text=how_to_label,style=style)
+            self._vboxPlots.addWidget(plotContainer)
+            expression=Expression(e)
+            extractor=Extractor(MESSAGE_TYPE, expression, [], color) if e.startswith('msg') else customExtractor("custom.data", expression, color)
+            done(extractor,plotContainer)
+            if(e=="msg.rpm"):
+                self._plc_rpm=plotContainer
+            if(e=="msg.current"):
+                self._plc_current=plotContainer
+            if(e=="msg.voltage"):
+                self._plc_current=plotContainer
+            if(e=="sensors.thrust"):
+                self._plc_thrust=plotContainer
+
+        plot_add_func_lists = {
+            "msg.rpm":partial(add_new_plot,QColor('red'),'RPM',e),
+            "msg.current":partial(add_new_plot,QColor('green'),'Current',e),
+            "msg.voltage":partial(add_new_plot,QColor('blue'),'Voltage',e),
+            "sensors.thrust":partial(add_new_plot,QColor('magenta'),'Thrust',e,
+                                     "No thrust sensor been set."
+                                     +" Go to [Config]-->[Thrust Serial Ports] to choose a thrust sensor.",
+                                     "warning")
+        }
+
+        plot_add_func_lists[e]()
+
+
+    def setPlotStyle(self,rpm):
+        if rpm==0:
+            for plot in self._active_plot:
+                plot._plot_area.setBackgroundColor(QColor("lightGray"))
+
         else:
-            self._plc_thrust._plot_area.setBackgroundColor(QColor("white"))
-            self._plc._plot_area.setBackgroundColor(QColor("white"))
+            for plot in self._active_plot:
+                plot._plot_area.setBackgroundColor(QColor("white"))
 
 
 class AnalysisMainWindow(QMainWindow):
@@ -492,7 +517,7 @@ class AnalysisMainWindow(QMainWindow):
         self._statusGroup = QGroupBox("Sensor Status")
         vboxStatus = QVBoxLayout(self._statusGroup)
         self._statusGroup.setLayout(vboxStatus)
-        vboxLeft.addWidget(self._statusGroup)
+
         self._statusLabel = QLabel('Load info failed.')
         vboxStatus.addWidget(self._statusLabel)
 
@@ -511,7 +536,9 @@ class AnalysisMainWindow(QMainWindow):
 
         self._controlTypeTabs.addTab(self._manualControlPanel, "Manual Control")
         self._controlTypeTabs.addTab(self._automaticControlPanel, "Automatic Control")
-        vboxRight.addWidget(self._controlTypeTabs)
+        self._controlTypeTabs.setFixedSize(250,500)
+        vboxLeft.addWidget(self._controlTypeTabs)
+        vboxLeft.addWidget(self._statusGroup)
 
         self._plotWidget = PlotsWidget(self, self._getTransfer)
         vboxRight.addWidget(self._plotWidget)
@@ -545,7 +572,6 @@ class AnalysisMainWindow(QMainWindow):
         self._reset_time_action.setShortcut(QKeySequence('Ctrl+Shift+R'))
         self._reset_time_action.triggered.connect(self._plotWidget._do_reset)
         control_menu.addAction(self._reset_time_action)
-        self.setWindowTitle("Motor Status Plots")
 
         #
         # Config Menu
@@ -568,8 +594,8 @@ class AnalysisMainWindow(QMainWindow):
     def _do_broadcast(self):
         try:
             msg = uavcan.equipment.esc.RPMCommand()
-            raw_value = self._manualControlPanel._escSlider.get_value()
-            value = raw_value
+            value = self._manualControlPanel._escSlider.get_value()
+            self._plotWidget.setPlotStyle(rpm=value)
             msg.rpm.append(int(value))
             self._node.broadcast(msg)
         except Exception as ex:
@@ -628,7 +654,7 @@ class AnalysisMainWindow(QMainWindow):
     def _setThrustSerialPort(self,port):
         print(port)
         self._thrust_port=port
-        self._plotWidget._plc_thrust.setHowToLabel("Thrust data source successfully set to {}".format(port)
+        self._plotWidget._plc_thrust.setHowToLabel("Thrust data source is set to {}".format(port)
                                                    , "success")
         self._startThrustAcquireLoop()
 
@@ -650,12 +676,6 @@ class AnalysisMainWindow(QMainWindow):
             self._thrust_queue=Queue()
             self._thrust_read_thread=Thread(target=read_from_port,args=(arduino,self._thrust_queue))
             self._thrust_read_thread.start()
-
-        else:
-            msgbox = QMessageBox(self)
-            msgbox.setText("ERROR: Can not configure the thrust device automatically."
-                           + "Please select it manually in <Thrust Sensor Ports> menu.")
-            msgbox.exec()
 
 
 class analysisManager:
@@ -688,55 +708,6 @@ class analysisManager:
         self._analysisWindow.activateWindow()
         return self._analysisWindow
 
-    def _spawnPlotsWindow(self):
-
-        channel = IPCChannel()
-        if self._hook_handle is None:
-            self._hook_handle = self._node.add_transfer_hook(self._transfer_hook)
-        proc = Process(target=_process_entry_point, name="AnalysisPlotsWindow", args=(channel,self._node))
-        proc.daemon = True
-        proc.start()
-        self._inferiors.append((proc, channel))
-        logger.info("Spawned new Analysis process %r", proc)
-
-
-def _process_entry_point(channel,node):
-    IPC_COMMAND_STOP = 'stop'
-    logger.info("analysis process started with PID %r", os.getpid())
-    app = QApplication(sys.argv)
-
-    def exit_if_should():
-        if RUNNING_ON_WINDOWS:
-            return False
-        else:
-            return os.getpid() != PARENT_PID
-
-    exit_check_timer = QTimer()
-    exit_check_timer.setSingleShot(False)
-    exit_check_timer.timeout.connect(exit_if_should)
-    exit_check_timer.start(2000)
-
-    def get_transfer():
-        received, obj = channel.receive_nonblocking()
-        if received:
-            if obj == IPC_COMMAND_STOP:
-                logger.info('Plotter process has received a stop request, goodbye')
-                app.exit(0)
-            else:
-                return obj
-
-    # global _singleton
-    # if _singleton is None:
-    #     _singleton = AnalysisMainWindow(get_transfer)
-    # _singleton.show()
-    # _singleton.raise_()
-    # _singleton.activateWindow()
-
-    print(node)
-    win = PlotsWindow(get_transfer)
-    win.show()
-    logger.info("Analysis process %r initialized successfully ,now starting the event loop", os.getpid())
-    sys.exit(app.exec_())
 
 def reconnect(signal,newhandler=None):
     try:

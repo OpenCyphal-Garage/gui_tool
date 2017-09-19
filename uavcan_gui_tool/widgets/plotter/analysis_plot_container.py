@@ -1,8 +1,6 @@
 import logging
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel
 from PyQt5.QtCore import Qt
-from .. import make_icon_button
-from .value_extractor_views import NewValueExtractorWindow, ExtractorWidget
 
 
 logger = logging.getLogger(__name__)
@@ -23,26 +21,14 @@ class PlotContainerWidget(QWidget):
 
         self._active_data_types = active_data_types
         self._extractors = []
-
-        # self._new_extractor_button = make_icon_button('plus', 'Add new value extractor', self,
-        #                                               on_clicked=self._do_new_extractor)
-
         self._how_to_label = QLabel('', self)
-
         hLayoutMain=QHBoxLayout(self)
         self._valueLabel = QLabel("{}:{}".format(self._valueName, self._value))
+        self._valueLabel.setFixedWidth(80)
         hLayoutMain.addWidget(self._valueLabel)
         layout = QVBoxLayout(self)
-
         layout.addWidget(self._plot_area, 1)
-
         footer_layout = QHBoxLayout(self)
-
-        # controls_layout = QVBoxLayout(self)
-        # # controls_layout.addWidget(self._new_extractor_button)
-        # controls_layout.addStretch(1)
-        # controls_layout.setContentsMargins(0, 0, 0, 0)
-        # footer_layout.addLayout(controls_layout)
         footer_layout.addWidget(self._how_to_label)
         self._extractors_layout = QVBoxLayout(self)
         self._extractors_layout.setContentsMargins(0, 0, 0, 0)
@@ -57,30 +43,15 @@ class PlotContainerWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(150)
 
-    def _do_new_extractor(self):
-        if self._how_to_label is not None:
-            self._how_to_label.hide()
-            self._how_to_label.setParent(None)
-            self._how_to_label.deleteLater()
-            self._how_to_label = None
-
-        def done(extractor):
-            self._extractors.append(extractor)
-            widget = ExtractorWidget(self, extractor)
-            self._extractors_layout.addWidget(widget)
-
-            def remove():
-                self._plot_area.remove_curves_provided_by_extractor(extractor)
-                self._extractors.remove(extractor)
-                self._extractors_layout.removeWidget(widget)
-
-            widget.on_remove = remove
-
-        win = NewValueExtractorWindow(self, self._active_data_types)
-        win.on_done = done
-        win.show()
-
     def process_transfer(self, timestamp, tr):
+        message=tr.message
+        set_value_by_value_name={
+            "RPM":lambda:self.setValue(message.rpm),
+            "Current":lambda:self.setValue(message.current),
+            "Voltage":lambda:self.setValue(message.voltage),
+        }
+        set_value_by_value_name[self._valueName]()
+
         for extractor in self._extractors:
             if(extractor.extraction_expression.source=="sensors.thrust"):
                 print("thrust continue")
@@ -123,5 +94,3 @@ class PlotContainerWidget(QWidget):
         else:
             logger.info("Failed to set howToLabel color: Unknown label type.")
 
-    def setStatus(self):
-        self._plot_area
