@@ -95,7 +95,6 @@ class PlotterWindow(QMainWindow):
     def _do_add_new_plot(self, plot_area_name):
         def remove():
             self._plot_containers.remove(plc)
-
         plc = PlotContainerWidget(self, PLOT_AREAS[plot_area_name], self._active_data_types)
         plc.on_close = remove
         self._plot_containers.append(plc)
@@ -142,6 +141,7 @@ class PlotterWindow(QMainWindow):
                         plc.process_transfer(tr.ts_mono - self._base_time, tr)
                     except Exception:
                         logger.error('Plot container failed to process a transfer', exc_info=True)
+
 
         for plc in self._plot_containers:
             try:

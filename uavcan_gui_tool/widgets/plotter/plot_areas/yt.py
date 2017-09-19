@@ -10,6 +10,7 @@ import logging
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
+
 from ....thirdparty.pyqtgraph import PlotWidget, mkPen
 from . import AbstractPlotArea, add_crosshair
 from ... import make_icon_button
@@ -17,7 +18,7 @@ from ... import make_icon_button
 
 logger = logging.getLogger(__name__)
 
-
+#
 class CurveContainer:
     MAX_DATA_POINTS = 200000
 

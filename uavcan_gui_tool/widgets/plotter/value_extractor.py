@@ -76,3 +76,4 @@ class Extractor:
     @property
     def error_count(self):
         return self._error_count
+
