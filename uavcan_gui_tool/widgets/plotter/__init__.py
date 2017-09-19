@@ -70,6 +70,7 @@ def _process_entry_point(channel):
 
     def get_transfer():
         received, obj = channel.receive_nonblocking()
+        print(obj)
         if received:
             if obj == IPC_COMMAND_STOP:
                 logger.info('Plotter process has received a stop request, goodbye')

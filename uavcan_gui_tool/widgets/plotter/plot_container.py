@@ -96,7 +96,7 @@ class PlotContainerWidget(QDockWidget):
                 if value is None:
                     continue
                 self._plot_area.add_value(extractor, timestamp, value)
-            except Exception:
+            except Exception as ex:
                 extractor.register_error()
 
     def closeEvent(self, qcloseevent):
