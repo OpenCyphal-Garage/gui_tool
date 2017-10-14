@@ -27,7 +27,6 @@ tracker are located at <a href="https://github.com/UAVCAN/gui_tool">https://gith
 def _list_3rd_party():
     from ..thirdparty import pyqtgraph
     import qtawesome
-    import serial
 
     try:
         from qtconsole import __version__ as qtconsole_version
@@ -41,7 +40,6 @@ def _list_3rd_party():
         ('PyQt5',       PYQT_VERSION_STR,       'GPLv3',    'https://www.riverbankcomputing.com/software/pyqt/intro'),
         ('PyQtGraph',   pyqtgraph.__version__,  'MIT',      'http://www.pyqtgraph.org/'),
         ('QtAwesome',   qtawesome.__version__,  'MIT',      'https://github.com/spyder-ide/qtawesome'),
-        ('PySerial',    serial.VERSION,         'BSD',      'https://github.com/pyserial/pyserial'),
         ('QtConsole',   qtconsole_version,      'BSD',      'http://jupyter.org'),
         ('IPython',     ipython_version,        'BSD',      'https://ipython.org'),
     ]

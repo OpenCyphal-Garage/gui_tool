@@ -75,11 +75,11 @@ def list_ifaces():
         return out
     else:
         # Windows, Mac, whatever
-        import serial.tools.list_ports
+        from PyQt5 import QtSerialPort
 
         out = OrderedDict()
-        for port, name, _ in serial.tools.list_ports.comports():
-            out[name] = port
+        for port in QtSerialPort.QSerialPortInfo.availablePorts():
+            out[port.description()] = port.systemLocation()
 
         return out
 
