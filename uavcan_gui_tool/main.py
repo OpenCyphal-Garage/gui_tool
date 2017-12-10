@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
                 action.setIcon(icon)
             if idx < 9:
                 action.setShortcut(QKeySequence('Ctrl+Shift+%d' % (idx + 1)))
-            action.triggered.connect(lambda: panel.safe_spawn(self, self._node))
+            action.triggered.connect(lambda state, panel=panel: panel.safe_spawn(self, self._node))
             panels_menu.addAction(action)
 
         #
