@@ -36,6 +36,27 @@ def node_health_to_color(health):
     }.get(health)
 
 
+def render_vendor_specific_status_code(s):
+    out = '%-5d     0x%04x\n' % (s, s)
+    binary = bin(s)[2:].rjust(16, '0')
+
+    def high_nibble(s):
+        return s.replace('0', '\u2070').replace('1', '\u00B9')  # Unicode 0/1 superscript
+
+    def low_nibble(s):
+        return s.replace('0', '\u2080').replace('1', '\u2081')  # Unicode 0/1 subscript
+
+    nibbles = [
+        high_nibble(binary[:4]),
+        low_nibble(binary[4:8]),
+        high_nibble(binary[8:12]),
+        low_nibble(binary[12:]),
+    ]
+
+    out += ''.join(nibbles)
+    return out
+
+
 class NodeTable(BasicTable):
     COLUMNS = [
         BasicTable.Column('NID',
@@ -52,8 +73,7 @@ class NodeTable(BasicTable):
         BasicTable.Column('Uptime',
                           lambda e: datetime.timedelta(days=0, seconds=e.status.uptime_sec)),
         BasicTable.Column('VSSC',
-                          lambda e: '%d  0x%04x' % (e.status.vendor_specific_status_code,
-                                                    e.status.vendor_specific_status_code))
+                          lambda e: render_vendor_specific_status_code(e.status.vendor_specific_status_code))
     ]
 
     info_requested = pyqtSignal([int])
@@ -71,7 +91,9 @@ class NodeTable(BasicTable):
         self._timer.timeout.connect(self._update)
         self._timer.start(500)
 
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(600)
+
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
     @property
     def monitor(self):
