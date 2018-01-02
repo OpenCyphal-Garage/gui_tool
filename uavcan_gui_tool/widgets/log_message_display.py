@@ -49,6 +49,8 @@ class LogMessageDisplayWidget(QGroupBox):
         self.setTitle('Log messages (uavcan.protocol.debug.LogMessage)')
 
         self._log_widget = RealtimeLogWidget(self, columns=self.COLUMNS, multi_line_rows=True, started_by_default=True)
+        self._log_widget.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self._log_widget.table.setWordWrap(True)
 
         self._subscriber = node.add_handler(uavcan.protocol.debug.LogMessage, self._log_widget.add_item_async)
 
