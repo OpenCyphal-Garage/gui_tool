@@ -61,6 +61,12 @@ def list_ifaces():
     if RUNNING_ON_LINUX:
         # Linux system
         ifaces = glob.glob('/dev/serial/by-id/*')
+        try:
+            ifaces = list(sorted(ifaces,
+                                 key=lambda s: not ('zubax' in s.lower() and 'babel' in s.lower())))
+        except Exception:
+            logger.warning('Sorting failed', exc_info=True)
+
         # noinspection PyBroadException
         try:
             ifaces = _linux_parse_ip_link_show(ifaces)       # Primary
