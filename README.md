@@ -39,7 +39,8 @@ but it may come in handy when using the embedded IPython console.
 ### Debian-based distributions
 
 ```bash
-sudo apt-get install -y python3-pip python3-setuptools python3-numpy python3-pyqt5 python3-pyqt5.qtsvg git-core
+sudo apt-get install -y python3-pip python3-setuptools python3-wheel
+sudo apt-get install -y python3-numpy python3-pyqt5 python3-pyqt5.qtsvg git-core
 sudo pip3 install git+https://github.com/UAVCAN/gui_tool@master
 ```
 
