@@ -4,6 +4,35 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialog, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QLineEdit
 
 
+class ValidationButton(QPushButton):
+    def __init__(self, parent, callback):
+        super().__init__('OK', parent)
+        self.clicked.connect(callback)
+
+class DirectorySelectionWidget(QWidget):
+    def __init__(self, parent):
+        super().__init__()
+        self.dir_selection = os.path.abspath(os.curdir)
+        self.dir_textbox = QLineEdit(parent)
+        self.dir_textbox.setText(self.dir_selection)
+
+        self.dir_browser = QPushButton('Browse', parent)
+
+        def on_browse():
+            self.dir_selection = str(QFileDialog.getExistingDirectory(parent, "Select Directory"))
+            self.dir_textbox.setText(self.dir_selection)
+
+        self.dir_browser.clicked.connect(on_browse)
+
+        layout = QHBoxLayout(parent)
+        layout.addWidget(self.dir_textbox)
+        layout.addWidget(self.dir_browser)
+
+        self.setLayout(layout)
+
+    def selection(self):
+        return self.dir_selection
+
 def run_dsdl_selection_window(icon):
     win = QDialog()
     win.setWindowTitle('UAVCAN DSDL Configuration')
@@ -11,38 +40,16 @@ def run_dsdl_selection_window(icon):
     win.setWindowFlags(Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
     win.setAttribute(Qt.WA_DeleteOnClose)
 
-    dsdl_directory = os.path.abspath(os.curdir)
-    dsdl_textbox = QLineEdit()
-    dsdl_textbox.setText(dsdl_directory)
-    dsdl_browse = QPushButton('Browse', win)
-
-    def on_browse():
-        nonlocal dsdl_directory
-        dsdl_directory = str(QFileDialog.getExistingDirectory(win, "Select Directory"))
-        dsdl_textbox.setText(dsdl_directory)
-
-    dsdl_browse.clicked.connect(on_browse)
-
-    ok = QPushButton('OK', win)
-
-    def on_ok():
-        win.close()
-
-    ok.clicked.connect(on_ok)
-
-    dsdl_layout = QHBoxLayout(win)
-    dsdl_layout.addWidget(dsdl_textbox)
-    dsdl_layout.addWidget(dsdl_browse)
-    dsdl_widget = QWidget()
-    dsdl_widget.setLayout(dsdl_layout)
+    dir_selection = DirectorySelectionWidget(win)
+    validation_button = ValidationButton(win, lambda: win.close())
 
     layout = QVBoxLayout(win)
     layout.addWidget(QLabel('Select custom DSDL messages'))
-    layout.addWidget(dsdl_widget)
-    layout.addWidget(ok)
+    layout.addWidget(dir_selection)
+    layout.addWidget(validation_button)
     layout.setSizeConstraint(layout.SetFixedSize)
+
     win.setLayout(layout)
 
     win.exec()
-
-    return dsdl_directory
+    return dir_selection.selection()
