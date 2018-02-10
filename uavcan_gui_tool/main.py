@@ -60,6 +60,7 @@ from PyQt5.QtCore import QTimer, Qt, QUrl
 
 from .version import __version__
 from .iface_configurator import run_iface_config_window
+from .dsdl_selector import run_dsdl_selection_window
 from .active_data_type_detector import ActiveDataTypeDetector
 from . import update_checker
 
@@ -566,6 +567,12 @@ def main():
         except Exception as ex:
             show_error('Fatal error', 'Could not list available interfaces', ex, blocking=True)
             sys.exit(1)
+
+        try:
+            dsdl_directory = run_dsdl_selection_window(get_app_icon())
+            uavcan.load_dsdl(dsdl_directory)
+        except:
+            logger.warn('No DSDL loaded, only standard messages will be supported', exc_info=True)
 
         # Trying to start the node on the specified interface
         try:
