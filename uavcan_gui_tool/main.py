@@ -572,7 +572,7 @@ def main():
             dsdl_directory = run_dsdl_selection_window(get_app_icon())
             uavcan.load_dsdl(dsdl_directory)
         except:
-            logger.warn('No DSDL loaded, only standard messages will be supported', exc_info=True)
+            logger.warn('No DSDL loaded, only standard messages will be supported')
 
         # Trying to start the node on the specified interface
         try:
