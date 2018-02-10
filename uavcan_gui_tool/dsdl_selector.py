@@ -1,7 +1,7 @@
 import os
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QDialog, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QLineEdit
+from PyQt5.QtCore import Qt, QSortFilterProxyModel
+from PyQt5.QtWidgets import QWidget, QDialog, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QLineEdit, QCompleter, QDirModel
 
 
 class ValidationButton(QPushButton):
@@ -13,20 +13,31 @@ class DirectorySelectionWidget(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.dir_selection = os.path.abspath(os.curdir)
-        self.dir_textbox = QLineEdit(parent)
-        self.dir_textbox.setText(self.dir_selection)
+        dir_textbox = QLineEdit(parent)
+        dir_textbox.setText(self.dir_selection)
 
-        self.dir_browser = QPushButton('Browse', parent)
+        dir_text_completer = QCompleter(parent)
+        dir_text_completer.setCaseSensitivity(Qt.CaseSensitive)
+        dir_text_completer.setModel(QDirModel(parent))
+        dir_textbox.setCompleter(dir_text_completer)
+
+        def on_edit():
+            nonlocal dir_textbox
+            self.dir_selection = str(dir_textbox.text())
+
+        dir_textbox.textChanged.connect(on_edit)
+
+        dir_browser = QPushButton('Browse', parent)
 
         def on_browse():
             self.dir_selection = str(QFileDialog.getExistingDirectory(parent, "Select Directory"))
-            self.dir_textbox.setText(self.dir_selection)
+            dir_textbox.setText(self.dir_selection)
 
-        self.dir_browser.clicked.connect(on_browse)
+        dir_browser.clicked.connect(on_browse)
 
         layout = QHBoxLayout(parent)
-        layout.addWidget(self.dir_textbox)
-        layout.addWidget(self.dir_browser)
+        layout.addWidget(dir_textbox)
+        layout.addWidget(dir_browser)
 
         self.setLayout(layout)
 
