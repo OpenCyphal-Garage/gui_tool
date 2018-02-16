@@ -6,28 +6,14 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import os
 import sys
 import glob
 import time
 import threading
 import copy
 from .widgets import show_error, get_monospace_font
-from PyQt5.QtWidgets import (
-    QComboBox,
-    QCompleter,
-    QDialog,
-    QDirModel,
-    QFileDialog,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QSpinBox,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import QComboBox, QCompleter, QDialog, QDirModel, QFileDialog, QGroupBox, QHBoxLayout, QLabel, \
+    QLineEdit, QPushButton, QSpinBox, QVBoxLayout, QGridLayout
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIntValidator
 from logging import getLogger
@@ -136,45 +122,44 @@ class BackgroundIfaceListUpdater:
         with self._lock:
             return copy.copy(self._ifaces)
 
-class DirectorySelectionWidget(QWidget):
-    def __init__(self, parent):
-        super().__init__()
-        self.dir_selection = os.path.abspath(os.curdir)
-        dir_textbox = QLineEdit(parent)
-        dir_textbox.setText(self.dir_selection)
 
-        dir_text_completer = QCompleter(parent)
+class DirectorySelectionWidget(QGroupBox):
+    def __init__(self, parent):
+        super(DirectorySelectionWidget, self).__init__('Location of custom DSDL definitions [optional]', parent)
+        self._dir_selection = None
+        dir_textbox = QLineEdit(self)
+        dir_textbox.setText(self._dir_selection)
+
+        dir_text_completer = QCompleter(self)
         dir_text_completer.setCaseSensitivity(Qt.CaseSensitive)
-        dir_text_completer.setModel(QDirModel(parent))
+        dir_text_completer.setModel(QDirModel(self))
         dir_textbox.setCompleter(dir_text_completer)
 
         def on_edit():
-            nonlocal dir_textbox
-            self.dir_selection = str(dir_textbox.text())
+            self._dir_selection = str(dir_textbox.text())
 
         dir_textbox.textChanged.connect(on_edit)
 
-        dir_browser = QPushButton('Browse', parent)
+        dir_browser = QPushButton('Browse', self)
 
         def on_browse():
-            self.dir_selection = str(QFileDialog.getExistingDirectory(parent, "Select Directory"))
-            dir_textbox.setText(self.dir_selection)
+            self._dir_selection = str(QFileDialog.getExistingDirectory(self, 'Select Directory'))
+            dir_textbox.setText(self._dir_selection)
 
         dir_browser.clicked.connect(on_browse)
 
-        layout = QHBoxLayout(parent)
+        layout = QHBoxLayout(self)
         layout.addWidget(dir_textbox)
         layout.addWidget(dir_browser)
-
         self.setLayout(layout)
 
-    def selection(self):
-        return self.dir_selection
+    def get_selection(self):
+        return self._dir_selection
 
 
 def run_setup_window(icon):
     win = QDialog()
-    win.setWindowTitle('Setup')
+    win.setWindowTitle('Application Setup')
     win.setWindowIcon(icon)
     win.setWindowFlags(Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
     win.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
@@ -283,25 +268,25 @@ def run_setup_window(icon):
 
     ok.clicked.connect(on_ok)
 
-    layout = QVBoxLayout(win)
-    layout.addWidget(QLabel('Select CAN interface'))
-    layout.addWidget(combo)
+    can_group = QGroupBox('CAN interface setup', win)
+    can_layout = QVBoxLayout()
+    can_layout.addWidget(QLabel('Select CAN interface'))
+    can_layout.addWidget(combo)
 
     slcan_group = QGroupBox('SLCAN adapter settings', win)
-    slcan_layout = QVBoxLayout(slcan_group)
-
-    slcan_layout.addWidget(QLabel('CAN bus bit rate:'))
-    slcan_layout.addWidget(bitrate)
-    slcan_layout.addWidget(QLabel('Adapter baud rate (not applicable to USB-CAN adapters):'))
-    slcan_layout.addWidget(baudrate)
-
+    slcan_layout = QGridLayout()
+    slcan_layout.addWidget(QLabel('CAN bus bit rate:'), 0, 0)
+    slcan_layout.addWidget(bitrate, 0, 1)
+    slcan_layout.addWidget(QLabel('Adapter baud rate (not applicable to USB-CAN adapters):'), 1, 0)
+    slcan_layout.addWidget(baudrate, 1, 1)
     slcan_group.setLayout(slcan_layout)
 
-    layout.addWidget(slcan_group)
+    can_layout.addWidget(slcan_group)
+    can_group.setLayout(can_layout)
 
-    layout.addWidget(QLabel('Select custom DSDL'))
+    layout = QVBoxLayout()
+    layout.addWidget(can_group)
     layout.addWidget(dir_selection)
-
     layout.addWidget(ok)
     layout.setSizeConstraint(layout.SetFixedSize)
     win.setLayout(layout)
@@ -315,4 +300,4 @@ def run_setup_window(icon):
         timer.start(int(BackgroundIfaceListUpdater.UPDATE_INTERVAL / 2 * 1000))
         win.exec()
 
-    return result, kwargs, dir_selection.selection()
+    return result, kwargs, dir_selection.get_selection()

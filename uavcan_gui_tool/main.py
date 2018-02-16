@@ -568,9 +568,16 @@ def main():
             sys.exit(1)
 
         try:
-            uavcan.load_dsdl(dsdl_directory)
-        except:
-            logger.warn('No DSDL loaded from {}, only standard messages will be supported'.format(dsdl_directory))
+            if dsdl_directory:
+                logger.info('Loading custom DSDL from %r', dsdl_directory)
+                uavcan.load_dsdl(dsdl_directory)
+                logger.info('Custom DSDL loaded successfully')
+        except Exception as ex:
+            logger.exception('No DSDL loaded from %r, only standard messages will be supported', dsdl_directory)
+            show_error('DSDL not loaded',
+                       'Could not load DSDL definitions from %r.\n'
+                       'The application will continue to work without the custom DSDL definitions.' % dsdl_directory,
+                       ex, blocking=True)
 
         # Trying to start the node on the specified interface
         try:
@@ -588,7 +595,7 @@ def main():
             node.spin(0.1)
         except uavcan.transport.TransferError:
             # allow unrecognized messages on startup:
-            logger.warn('UAVCAN Transfer Error occured on startup', exc_info=True)
+            logger.warning('UAVCAN Transfer Error occurred on startup', exc_info=True)
             break
         except Exception as ex:
             logger.error('UAVCAN node init failed', exc_info=True)
