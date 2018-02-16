@@ -59,8 +59,7 @@ from PyQt5.QtGui import QKeySequence, QDesktopServices
 from PyQt5.QtCore import QTimer, Qt, QUrl
 
 from .version import __version__
-from .iface_configurator import run_iface_config_window
-from .dsdl_selector import run_dsdl_selection_window
+from .setup_window import run_setup_window
 from .active_data_type_detector import ActiveDataTypeDetector
 from . import update_checker
 
@@ -561,7 +560,7 @@ def main():
     while True:
         # Asking the user to specify which interface to work with
         try:
-            iface, iface_kwargs = run_iface_config_window(get_app_icon())
+            iface, iface_kwargs, dsdl_directory = run_setup_window(get_app_icon())
             if not iface:
                 sys.exit(0)
         except Exception as ex:
@@ -569,7 +568,6 @@ def main():
             sys.exit(1)
 
         try:
-            dsdl_directory = run_dsdl_selection_window(get_app_icon())
             uavcan.load_dsdl(dsdl_directory)
         except:
             logger.warn('No DSDL loaded from {}, only standard messages will be supported'.format(dsdl_directory))

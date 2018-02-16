@@ -6,13 +6,28 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
+import os
 import sys
 import glob
 import time
 import threading
 import copy
 from .widgets import show_error, get_monospace_font
-from PyQt5.QtWidgets import QDialog, QSpinBox, QComboBox, QPushButton, QLabel, QVBoxLayout, QCompleter, QGroupBox
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QCompleter,
+    QDialog,
+    QDirModel,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIntValidator
 from logging import getLogger
@@ -121,10 +136,45 @@ class BackgroundIfaceListUpdater:
         with self._lock:
             return copy.copy(self._ifaces)
 
+class DirectorySelectionWidget(QWidget):
+    def __init__(self, parent):
+        super().__init__()
+        self.dir_selection = os.path.abspath(os.curdir)
+        dir_textbox = QLineEdit(parent)
+        dir_textbox.setText(self.dir_selection)
 
-def run_iface_config_window(icon):
+        dir_text_completer = QCompleter(parent)
+        dir_text_completer.setCaseSensitivity(Qt.CaseSensitive)
+        dir_text_completer.setModel(QDirModel(parent))
+        dir_textbox.setCompleter(dir_text_completer)
+
+        def on_edit():
+            nonlocal dir_textbox
+            self.dir_selection = str(dir_textbox.text())
+
+        dir_textbox.textChanged.connect(on_edit)
+
+        dir_browser = QPushButton('Browse', parent)
+
+        def on_browse():
+            self.dir_selection = str(QFileDialog.getExistingDirectory(parent, "Select Directory"))
+            dir_textbox.setText(self.dir_selection)
+
+        dir_browser.clicked.connect(on_browse)
+
+        layout = QHBoxLayout(parent)
+        layout.addWidget(dir_textbox)
+        layout.addWidget(dir_browser)
+
+        self.setLayout(layout)
+
+    def selection(self):
+        return self.dir_selection
+
+
+def run_setup_window(icon):
     win = QDialog()
-    win.setWindowTitle('CAN Interface Configuration')
+    win.setWindowTitle('Setup')
     win.setWindowIcon(icon)
     win.setWindowFlags(Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
     win.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
@@ -158,6 +208,8 @@ def run_iface_config_window(icon):
     baudrate.setValidator(QIntValidator(min(STANDARD_BAUD_RATES), max(STANDARD_BAUD_RATES)))
     baudrate.insertItems(0, map(str, STANDARD_BAUD_RATES))
     baudrate.setCurrentText(str(DEFAULT_BAUD_RATE))
+
+    dir_selection = DirectorySelectionWidget(win)
 
     ok = QPushButton('OK', win)
 
@@ -246,6 +298,10 @@ def run_iface_config_window(icon):
     slcan_group.setLayout(slcan_layout)
 
     layout.addWidget(slcan_group)
+
+    layout.addWidget(QLabel('Select custom DSDL'))
+    layout.addWidget(dir_selection)
+
     layout.addWidget(ok)
     layout.setSizeConstraint(layout.SetFixedSize)
     win.setLayout(layout)
@@ -259,4 +315,4 @@ def run_iface_config_window(icon):
         timer.start(int(BackgroundIfaceListUpdater.UPDATE_INTERVAL / 2 * 1000))
         win.exec()
 
-    return result, kwargs
+    return result, kwargs, dir_selection.selection()
