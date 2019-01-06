@@ -583,6 +583,9 @@ def main():
                 logger.info('Loading custom DSDL from %r', dsdl_directory)
                 uavcan.load_dsdl(dsdl_directory)
                 logger.info('Custom DSDL loaded successfully')
+
+                # setup an environment variable for sub-processes to know where to load custom DSDL from
+                os.environ['UAVCAN_CUSTOM_DSDL_PATH'] = dsdl_directory
         except Exception as ex:
             logger.exception('No DSDL loaded from %r, only standard messages will be supported', dsdl_directory)
             show_error('DSDL not loaded',
