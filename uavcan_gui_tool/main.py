@@ -15,10 +15,18 @@ import tempfile
 
 assert sys.version[0] == '3'
 
+from argparse import ArgumentParser
+parser = ArgumentParser(description='UAVCAN GUI tool')
+
+parser.add_argument("--debug", action='store_true', help="enable debugging")
+parser.add_argument("--dsdl", help="path to custom DSDL")
+
+args = parser.parse_args()
+
 #
 # Configuring logging before other packages are imported
 #
-if '--debug' in sys.argv:
+if args.debug:
     sys.argv.remove('--debug')
     logging_level = logging.DEBUG
 else:
@@ -560,12 +568,15 @@ def main():
     while True:
         # Asking the user to specify which interface to work with
         try:
-            iface, iface_kwargs, dsdl_directory = run_setup_window(get_app_icon())
+            iface, iface_kwargs, dsdl_directory = run_setup_window(get_app_icon(), args.dsdl)
             if not iface:
                 sys.exit(0)
         except Exception as ex:
             show_error('Fatal error', 'Could not list available interfaces', ex, blocking=True)
             sys.exit(1)
+
+        if not dsdl_directory:
+            dsdl_directory = args.dsdl
 
         try:
             if dsdl_directory:
