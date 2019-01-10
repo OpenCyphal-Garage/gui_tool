@@ -224,6 +224,11 @@ class BusMonitorWindow(QMainWindow):
         self.setWindowTitle('CAN bus monitor (%s)' % iface_name.split(os.path.sep)[-1])
         self.setWindowIcon(get_app_icon())
 
+        # get dsdl_directory from parent process, if set
+        dsdl_directory = os.environ.get('UAVCAN_CUSTOM_DSDL_PATH',None)
+        if dsdl_directory:
+            uavcan.load_dsdl(dsdl_directory)
+
         self._get_frame = get_frame
 
         self._log_widget = RealtimeLogWidget(self, columns=COLUMNS, font=get_monospace_font(),

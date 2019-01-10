@@ -124,9 +124,9 @@ class BackgroundIfaceListUpdater:
 
 
 class DirectorySelectionWidget(QGroupBox):
-    def __init__(self, parent):
+    def __init__(self, parent, dsdl_path=None):
         super(DirectorySelectionWidget, self).__init__('Location of custom DSDL definitions [optional]', parent)
-        self._dir_selection = None
+        self._dir_selection = dsdl_path
         dir_textbox = QLineEdit(self)
         dir_textbox.setText(self._dir_selection)
 
@@ -157,7 +157,7 @@ class DirectorySelectionWidget(QGroupBox):
         return self._dir_selection
 
 
-def run_setup_window(icon):
+def run_setup_window(icon, dsdl_path=None):
     win = QDialog()
     win.setWindowTitle('Application Setup')
     win.setWindowIcon(icon)
@@ -194,7 +194,7 @@ def run_setup_window(icon):
     baudrate.insertItems(0, map(str, STANDARD_BAUD_RATES))
     baudrate.setCurrentText(str(DEFAULT_BAUD_RATE))
 
-    dir_selection = DirectorySelectionWidget(win)
+    dir_selection = DirectorySelectionWidget(win, dsdl_path)
 
     ok = QPushButton('OK', win)
 
