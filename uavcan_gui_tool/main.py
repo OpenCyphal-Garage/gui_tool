@@ -27,7 +27,6 @@ args = parser.parse_args()
 # Configuring logging before other packages are imported
 #
 if args.debug:
-    sys.argv.remove('--debug')
     logging_level = logging.DEBUG
 else:
     logging_level = logging.INFO
