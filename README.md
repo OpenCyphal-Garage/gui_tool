@@ -59,6 +59,12 @@ If you're still unable to install the package, please open a ticket.
 
 *Maintainers wanted*
 
+#### Fedora 29+
+```bash
+sudo dnf install python3-PyQt5
+sudo pip3 install git+https://github.com/UAVCAN/gui_tool@master
+```
+
 ## Installing on Windows
 
 In order to install this application,
