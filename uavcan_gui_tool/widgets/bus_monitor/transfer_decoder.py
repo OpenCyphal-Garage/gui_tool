@@ -47,7 +47,7 @@ def decode_transfer_from_frame(entry_row, row_to_frame):
             raise DecodingFailedException('SOT not found')
         f, d = row_to_frame(row)
         row -= 1
-        if f.id == can_id and _get_transfer_id(f) == transfer_id:
+        if f.id == can_id and _get_transfer_id(f) == transfer_id and d == direction:
             frames.insert(0, f)
             related_rows.insert(0, row)
 
@@ -58,7 +58,7 @@ def decode_transfer_from_frame(entry_row, row_to_frame):
         if f is None or row - entry_row > TABLE_TRAVERSING_RANGE:
             raise DecodingFailedException('EOT not found')
         row += 1
-        if f.id == can_id and _get_transfer_id(f) == transfer_id:
+        if f.id == can_id and _get_transfer_id(f) == transfer_id and d == direction:
             frames.append(f)
             related_rows.append(row)
 
