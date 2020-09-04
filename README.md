@@ -109,6 +109,7 @@ as these ports are supported much better at the moment.
 
 ```bash
 brew install python3
+brew postinstall python3
 pip3 install PyQt5
 pip3 install git+https://github.com/UAVCAN/gui_tool@master
 uavcan_gui_tool
