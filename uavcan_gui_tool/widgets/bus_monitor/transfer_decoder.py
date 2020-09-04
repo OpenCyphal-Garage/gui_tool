@@ -33,7 +33,7 @@ def _is_end_of_transfer(frame):
 
 
 def decode_transfer_from_frame(entry_row, row_to_frame):
-    entry_frame = row_to_frame(entry_row)
+    entry_frame, direction = row_to_frame(entry_row)
     can_id = entry_frame.id
     transfer_id = _get_transfer_id(entry_frame)
     frames = [entry_frame]
@@ -45,7 +45,7 @@ def decode_transfer_from_frame(entry_row, row_to_frame):
     while not _is_start_of_transfer(frames[0]):
         if row < 0 or entry_row - row > TABLE_TRAVERSING_RANGE:
             raise DecodingFailedException('SOT not found')
-        f = row_to_frame(row)
+        f, d = row_to_frame(row)
         row -= 1
         if f.id == can_id and _get_transfer_id(f) == transfer_id:
             frames.insert(0, f)
@@ -54,7 +54,7 @@ def decode_transfer_from_frame(entry_row, row_to_frame):
     # Scanning forward looking for the last frame
     row = entry_row + 1
     while not _is_end_of_transfer(frames[-1]):
-        f = row_to_frame(row)
+        f, d = row_to_frame(row)
         if f is None or row - entry_row > TABLE_TRAVERSING_RANGE:
             raise DecodingFailedException('EOT not found')
         row += 1

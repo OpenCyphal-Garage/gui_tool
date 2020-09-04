@@ -202,6 +202,7 @@ def row_to_frame(table, row_index):
     can_id = None
     payload = None
     extended = None
+    direction = None
 
     for col_index, col_spec in enumerate(COLUMNS):
         item = table.item(row_index, col_index).text()
@@ -210,9 +211,11 @@ def row_to_frame(table, row_index):
             can_id = int(item, 16)
         if col_spec.name == 'Data Hex':
             payload = bytes([int(x, 16) for x in item.split()])
+        if col_spec.name == 'Dir':
+            direction = item.strip()
 
-    assert all(map(lambda x: x is not None, [can_id, payload, extended]))
-    return CANFrame(can_id, payload, extended, ts_monotonic=-1, ts_real=-1)
+    assert all(map(lambda x: x is not None, [can_id, payload, extended, direction]))
+    return CANFrame(can_id, payload, extended, ts_monotonic=-1, ts_real=-1), direction
 
 
 class BusMonitorWindow(QMainWindow):
