@@ -197,11 +197,12 @@ COLUMNS = [
 
 def row_to_frame(table, row_index):
     if row_index >= table.rowCount():
-        return None
+        return None, None
 
     can_id = None
     payload = None
     extended = None
+    direction = None
 
     for col_index, col_spec in enumerate(COLUMNS):
         item = table.item(row_index, col_index).text()
@@ -210,9 +211,11 @@ def row_to_frame(table, row_index):
             can_id = int(item, 16)
         if col_spec.name == 'Data Hex':
             payload = bytes([int(x, 16) for x in item.split()])
+        if col_spec.name == 'Dir':
+            direction = item.strip()
 
-    assert all(map(lambda x: x is not None, [can_id, payload, extended]))
-    return CANFrame(can_id, payload, extended, ts_monotonic=-1, ts_real=-1)
+    assert all(map(lambda x: x is not None, [can_id, payload, extended, direction]))
+    return CANFrame(can_id, payload, extended, ts_monotonic=-1, ts_real=-1), direction
 
 
 class BusMonitorWindow(QMainWindow):
@@ -223,6 +226,11 @@ class BusMonitorWindow(QMainWindow):
         super(BusMonitorWindow, self).__init__()
         self.setWindowTitle('CAN bus monitor (%s)' % iface_name.split(os.path.sep)[-1])
         self.setWindowIcon(get_app_icon())
+
+        # get dsdl_directory from parent process, if set
+        dsdl_directory = os.environ.get('UAVCAN_CUSTOM_DSDL_PATH',None)
+        if dsdl_directory:
+            uavcan.load_dsdl(dsdl_directory)
 
         self._get_frame = get_frame
 

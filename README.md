@@ -6,7 +6,9 @@ UAVCAN GUI Tool
 
 UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN bus management and diagnostics.
 
-[**READ THE DOCUMENTATION HERE**](http://uavcan.org/GUI_Tool).
+[Read the docs at **uavcan.org/GUI_Tool**](http://uavcan.org/GUI_Tool).
+
+[Ask questions at **forum.uavcan.org**](https://forum.uavcan.org).
 
 Read installation instructions:
 
@@ -57,6 +59,12 @@ If you're still unable to install the package, please open a ticket.
 
 *Maintainers wanted*
 
+#### Fedora 29+
+```bash
+sudo dnf install python3-PyQt5
+sudo pip3 install git+https://github.com/UAVCAN/gui_tool@master
+```
+
 ## Installing on Windows
 
 In order to install this application,
@@ -101,6 +109,7 @@ as these ports are supported much better at the moment.
 
 ```bash
 brew install python3
+brew postinstall python3
 pip3 install PyQt5
 pip3 install git+https://github.com/UAVCAN/gui_tool@master
 uavcan_gui_tool
