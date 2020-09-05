@@ -197,7 +197,7 @@ COLUMNS = [
 
 def row_to_frame(table, row_index):
     if row_index >= table.rowCount():
-        return None
+        return None, None
 
     can_id = None
     payload = None
