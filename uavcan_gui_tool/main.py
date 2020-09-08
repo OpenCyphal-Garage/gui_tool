@@ -251,6 +251,9 @@ class MainWindow(QMainWindow):
             Formats the argument as YAML structure using uavcan.to_yaml(), and prints the result into stdout.
             Use this function to print received UAVCAN structures.
             """
+            if obj is None:
+                return
+
             print(uavcan.to_yaml(obj))
 
         def throw_if_anonymous():
