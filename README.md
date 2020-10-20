@@ -1,12 +1,15 @@
-UAVCAN GUI Tool
-===============
+UAVCAN GUI Tool (legacy)
+========================
 
-[![Travis CI](https://travis-ci.org/UAVCAN/gui_tool.svg?branch=master)](https://travis-ci.org/UAVCAN/gui_tool)
-[![Gitter](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/UAVCAN/general)
+UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN/CAN v0 management and diagnostics.
 
-UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN bus management and diagnostics.
+**This is a legacy application; it is not compatible with the stable UAVCAN v1.
+There is [work underway on the new GUI solution called Yukon](https://forum.uavcan.org/c/app/yukon/14)
+that will support UAVCAN v1.
+While Yukon is unavailable, users of UAVCAN v1 are recommended to use the
+[PyUAVCAN command line tool](https://pyuavcan.readthedocs.io/).**
 
-[Read the docs at **uavcan.org/GUI_Tool**](http://uavcan.org/GUI_Tool).
+[Read the docs at **legacy.uavcan.org/GUI_Tool**](http://legacy.uavcan.org/GUI_Tool).
 
 [Ask questions at **forum.uavcan.org**](https://forum.uavcan.org).
 
