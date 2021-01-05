@@ -34,5 +34,5 @@ class PanelDescriptor:
 
 PANELS = sorted([
     PanelDescriptor(esc_panel),
-    PanelDescriptor(acturator_panel)
+    PanelDescriptor(actuator_panel)
 ], key=lambda x: x.name)
