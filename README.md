@@ -7,7 +7,7 @@ UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN/C
 There is [work underway on the new GUI solution called Yukon](https://forum.uavcan.org/c/app/yukon/14)
 that will support UAVCAN v1.
 While Yukon is unavailable, users of UAVCAN v1 are recommended to use the
-[PyUAVCAN command line tool](https://pyuavcan.readthedocs.io/).**
+[Yakut command line tool](https://github.com/UAVCAN/yakut).**
 
 [Read the docs at **legacy.uavcan.org/GUI_Tool**](http://legacy.uavcan.org/GUI_Tool).
 
@@ -15,13 +15,13 @@ While Yukon is unavailable, users of UAVCAN v1 are recommended to use the
 
 Read installation instructions:
 
-- [**LINUX**](#installing-on-linux)
+- [**GNU/LINUX**](#installing-on-gnulinux)
 - [**WINDOWS**](#installing-on-windows)
-- [**OSX**](#installing-on-osx)
+- [**MACOS**](#installing-on-macos)
 
 ![UAVCAN GUI Tool screenshot](screenshot.png "UAVCAN GUI Tool screenshot")
 
-## Installing on Linux
+## Installing on GNU/Linux
 
 The general approach is simple:
 
@@ -97,7 +97,7 @@ python setup.py bdist_msi
 
 Collect the resulting signed MSI from `dist/`.
 
-## Installing on OSX
+## Installing on macOS
 
 OSX support is a bit lacking in the way that installation doesn't create an entry in the applications menu,
 but this issue should be fixed someday in the future.
