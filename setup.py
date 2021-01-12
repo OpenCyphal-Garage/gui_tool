@@ -57,8 +57,7 @@ args = dict(
         'pyyaml~=3.10',
         'easywebdav~=1.2',
         'numpy',
-        # These dependencies are not directly used by the application, but they are sometimes not pulled in
-        # automatically by PIP, so we need to list them here. This should be investigated further.
+        'pyqt5',
         'traitlets',
         'jupyter-client',
         'ipykernel',
@@ -130,7 +129,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 # Windows-specific options and hacks
 #
 if os.name == 'nt':
-    args.setdefault('setup_requires', []).append('cx_Freeze ~= 6.1')
+    args.setdefault('install_requires', []).append('cx_Freeze ~= 6.1')
 
 if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
@@ -178,13 +177,6 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
             ],
             'include_msvcr': True,
             'include_files': [
-                # cx_Freeze doesn't respect the DSDL definition files that are embedded into the package,
-                # so we need to include the Pyuavcan package as data in order to work-around this problem.
-                # Despite the fact that Pyuavcan is included as data, we still need cx_Freeze to analyze its
-                # dependencies, so we don't exclude it explicitly.
-                os.path.join(unpacked_eggs_dir, 'uavcan'),
-                # Same thing goes with the main package - we want its directory structure untouched, so we include
-                # it as data, too.
                 PACKAGE_NAME,
                 # These packages don't work properly when packed in .zip, so here we have another bunch of ugly hacks
                 os.path.join(unpacked_eggs_dir, os.path.dirname(PyQt5.__file__)),
@@ -212,7 +204,6 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     ]
     # Dispatching to cx_Freeze only if MSI build was requested explicitly. Otherwise continue with regular setup.
     # This is done in order to be able to install dependencies with regular setuptools.
-    # TODO: This is probably not right.
     def setup(*args, **kwargs):
         cx_Freeze.setup(*args, **kwargs)
 
