@@ -84,8 +84,6 @@ Make sure that `python` can be invoked from the terminal; if it can't, check you
 * Windows 10 SDK.
 [Free edition of Visual Studio is packaged with Windows SDK](https://www.visualstudio.com/).
 
-Then, place the `*.pfx` file containing the code signing certificate in the outer directory
-(the build script will search for `../*.pfx`).
 Having done that, execute the following (the script will prompt you for password to read the certificate file):
 
 ```dos

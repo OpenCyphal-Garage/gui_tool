@@ -12,7 +12,6 @@ import sys
 import shutil
 import pkg_resources
 import glob
-import subprocess
 from setuptools import setup, find_packages
 from setuptools.archive_util import unpack_archive
 
@@ -52,11 +51,11 @@ args = dict(
     install_requires=[
         'setuptools>=18.5',
         'uavcan>=1.0.0.dev29',
-        'pyserial>=3.0',
-        'qtawesome>=0.3.1',
-        'qtconsole>=4.2.0',
-        'pyyaml>=3.10',
-        'easywebdav>=1.2',
+        'pyserial~=3.0',
+        'qtawesome~=0.3.1',
+        'qtconsole~=4.2.0',
+        'pyyaml~=3.10',
+        'easywebdav~=1.2',
         'numpy',
         # These dependencies are not directly used by the application, but they are sometimes not pulled in
         # automatically by PIP, so we need to list them here. This should be investigated further.
@@ -130,20 +129,8 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 #
 # Windows-specific options and hacks
 #
-WINDOWS_SIGNATURE_TIMESTAMPING_SERVER = 'http://timestamp.verisign.com/scripts/timstamp.dll'
-
-
-def get_windows_signtool_path():
-    # TODO: Search for signtool properly
-    p = os.path.join(r'C:\Program Files (x86)\Windows Kits\10\bin\x86', 'signtool.exe')
-    if os.path.isfile(p):
-        return p
-    print('SIGNTOOL.EXE NOT FOUND (probably because the search algorithm is imperfect at best)')
-    print('Please provide path to SIGNTOOL.EXE:')
-    return input('> ')
-
 if os.name == 'nt':
-    args.setdefault('setup_requires', []).append('cx_Freeze')
+    args.setdefault('setup_requires', []).append('cx_Freeze ~= 6.1')
 
 if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     import cx_Freeze
@@ -227,46 +214,6 @@ if ('bdist_msi' in sys.argv) or ('build_exe' in sys.argv):
     # This is done in order to be able to install dependencies with regular setuptools.
     # TODO: This is probably not right.
     def setup(*args, **kwargs):
-        # Checking preconditions and such
-        signtool_path = get_windows_signtool_path()
-        print('Using this signtool:', signtool_path)
-
-        pfx_path = glob.glob(os.path.join('..', '*.pfx'))
-        if len(pfx_path) != 1:
-            raise RuntimeError('Expected to find exactly one PFX in the outer dir, found this: %r' % pfx_path)
-        pfx_path = pfx_path[0]
-        print('Using this certificate:', pfx_path)
-
-        pfx_password = input('Enter password to read the certificate file: ').strip()
-
-        # Freezing
         cx_Freeze.setup(*args, **kwargs)
-
-        # Code signing the outputs
-        print('Signing the outputs...')
-        for out in glob.glob(os.path.join('dist', '*.msi')):
-            out_copy = '.signed.'.join(out.rsplit('.', 1))
-            try:
-                shutil.rmtree(out_copy)
-            except Exception:
-                pass
-            shutil.copy(out, out_copy)
-            print('Signing file:', out_copy)
-            while True:
-                try:
-                    subprocess.check_call([signtool_path, 'sign',
-                                           '/f', pfx_path,
-                                           '/p', pfx_password,
-                                           '/t', WINDOWS_SIGNATURE_TIMESTAMPING_SERVER,
-                                           out_copy])
-                except Exception as ex:
-                    print('SignTool failed:', ex)
-                    if input('Try again? y/[n] ').lower().strip()[0] == 'y':
-                        pass
-                    else:
-                        raise
-                else:
-                    break
-        print('All files were signed successfully')
 
 setup(**args)
