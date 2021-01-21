@@ -54,7 +54,7 @@ args = dict(
         'pyserial~=3.0',
         'qtawesome~=0.3.1',
         'qtconsole~=4.2.0',
-        'pyyaml~=3.10',
+        'pyyaml~=5.1',
         'easywebdav~=1.2',
         'numpy',
         'pyqt5',
