@@ -221,7 +221,7 @@ def run_setup_window(icon, dsdl_path=None):
             if not tx:
                 break
             known_keys.add(tx)
-            if tx not in ifaces:
+            if tx not in list(ifaces.keys()):
                 logger.debug('Removing iface %r', tx)
                 remove_indices.append(idx)
         # Removing - starting from the last item in order to retain indexes
@@ -229,7 +229,7 @@ def run_setup_window(icon, dsdl_path=None):
             combo.removeItem(idx)
         # Adding new items - starting from the last item in order to retain the final order
         for key in list(ifaces.keys())[::-1]:
-            if key not in known_keys:
+            if key and key not in known_keys:
                 logger.debug('Adding iface %r', key)
                 combo.insertItem(0, key)
         # Updating selection
