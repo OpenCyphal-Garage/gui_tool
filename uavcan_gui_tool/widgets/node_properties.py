@@ -6,7 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
+import pyuavcan_v0
 import os
 import datetime
 from functools import partial
@@ -116,8 +116,8 @@ class InfoBox(QGroupBox):
         self.setEnabled(True)
 
         if entry.status:        # Status should be always available...
-            self._mode_health_uptime[0].set(uavcan.value_to_constant_name(entry.status, 'mode', keep_literal=True))
-            self._mode_health_uptime[1].set(uavcan.value_to_constant_name(entry.status, 'health', keep_literal=True))
+            self._mode_health_uptime[0].set(pyuavcan_v0.value_to_constant_name(entry.status, 'mode', keep_literal=True))
+            self._mode_health_uptime[1].set(pyuavcan_v0.value_to_constant_name(entry.status, 'health', keep_literal=True))
             self._mode_health_uptime[2].set(datetime.timedelta(days=0, seconds=entry.status.uptime_sec))
 
             self._mode_health_uptime[0].set_background_color(node_mode_to_color(entry.status.mode))
@@ -173,16 +173,16 @@ class Controls(QGroupBox):
         self._file_server_widget = file_server_widget
         self._dynamic_node_id_allocator_widget = dynamic_node_id_allocator_widget
 
-        self._restart_button = make_icon_button('power-off', 'Restart the node [uavcan.protocol.RestartNode]', self,
+        self._restart_button = make_icon_button('power-off', 'Restart the node [pyuavcan_v0.protocol.RestartNode]', self,
                                                 text='Restart', on_clicked=self._do_restart)
 
         self._transport_stats_button = make_icon_button('truck',
-                                                        'Request transport stats [uavcan.protocol.GetTransportStats]',
+                                                        'Request transport stats [pyuavcan_v0.protocol.GetTransportStats]',
                                                         self, text='Get Transport Stats',
                                                         on_clicked=self._do_get_transport_stats)
 
         self._update_button = make_icon_button('bug',
-                                               'Request firmware update [uavcan.protocol.file.BeginFirmwareUpdate]',
+                                               'Request firmware update [pyuavcan_v0.protocol.file.BeginFirmwareUpdate]',
                                                self, text='Update Firmware', on_clicked=self._do_firmware_update)
 
         layout = QHBoxLayout(self)
@@ -192,9 +192,9 @@ class Controls(QGroupBox):
         self.setLayout(layout)
 
     def _do_restart(self):
-        request = uavcan.protocol.RestartNode.Request(magic_number=uavcan.protocol.RestartNode.Request().MAGIC_NUMBER)
+        request = pyuavcan_v0.protocol.RestartNode.Request(magic_number=pyuavcan_v0.protocol.RestartNode.Request().MAGIC_NUMBER)
         if not request_confirmation('Confirm node restart',
-                                    'Do you really want to send request uavcan.protocol.RestartNode?', self):
+                                    'Do you really want to send request pyuavcan_v0.protocol.RestartNode?', self):
             return
 
         def callback(e):
@@ -214,7 +214,7 @@ class Controls(QGroupBox):
             if e is None:
                 self.window().show_message('Transport stats request timed out')
             else:
-                text = uavcan.to_yaml(e.response)
+                text = pyuavcan_v0.to_yaml(e.response)
                 win = QDialog(self)
                 view = QPlainTextEdit(win)
                 view.setReadOnly(True)
@@ -228,7 +228,7 @@ class Controls(QGroupBox):
                 win.setLayout(layout)
                 win.show()
         try:
-            self._node.request(uavcan.protocol.GetTransportStats.Request(),
+            self._node.request(pyuavcan_v0.protocol.GetTransportStats.Request(),
                                self._target_node_id, callback, priority=REQUEST_PRIORITY)
             self.window().show_message('Transport stats requested')
         except Exception as ex:
@@ -254,7 +254,7 @@ class Controls(QGroupBox):
 
         # Requesting the firmware path
         fw_file = QFileDialog().getOpenFileName(self, 'Select firmware file', '',
-                                                'Binary images (*.bin *.uavcan.bin);;All files (*.*)')
+                                                'Binary images (*.bin *.pyuavcan_v0.bin);;All files (*.*)')
         if not fw_file[0]:
             self.window().show_message('Cancelled')
             return
@@ -325,9 +325,9 @@ class Controls(QGroupBox):
 
             if num_remaining_requests > 0:
                 num_remaining_requests -= 1
-                request = uavcan.protocol.file.BeginFirmwareUpdate.Request(
+                request = pyuavcan_v0.protocol.file.BeginFirmwareUpdate.Request(
                     source_node_id=self._node.node_id,
-                    image_file_remote_path=uavcan.protocol.file.Path(path=remote_fw_file))
+                    image_file_remote_path=pyuavcan_v0.protocol.file.Path(path=remote_fw_file))
                 self.window().show_message('Sending request (%d to go) %s', num_remaining_requests, request)
                 try:
                     self._node.request(request, self._target_node_id, on_response, priority=REQUEST_PRIORITY)
@@ -336,12 +336,12 @@ class Controls(QGroupBox):
             else:
                 on_success_or_timeout()
 
-        node_status_handle = self._node.add_handler(uavcan.protocol.NodeStatus, on_node_status)
+        node_status_handle = self._node.add_handler(pyuavcan_v0.protocol.NodeStatus, on_node_status)
         send_request()  # Kickstarting the process, it will continue in the background
 
 
 def get_union_value(u):
-    return getattr(u, uavcan.get_active_union_field(u))
+    return getattr(u, pyuavcan_v0.get_active_union_field(u))
 
 
 def round_float(x):
@@ -350,13 +350,13 @@ def round_float(x):
 
 def render_union(u):
     value = get_union_value(u)
-    if 'boolean' in uavcan.get_active_union_field(u):
+    if 'boolean' in pyuavcan_v0.get_active_union_field(u):
         return bool(value)
     if isinstance(value, int):
         return value
     if isinstance(value, float):
         return round_float(value)
-    if 'uavcan.protocol.param.Empty' in str(value):
+    if 'pyuavcan_v0.protocol.param.Empty' in str(value):
         return ''
     return value
 
@@ -373,16 +373,16 @@ class ConfigParamEditWindow(QDialog):
         self._update_callback = update_callback
 
         min_val = get_union_value(param_struct.min_value)
-        if 'uavcan.protocol.param.Empty' in str(min_val):
+        if 'pyuavcan_v0.protocol.param.Empty' in str(min_val):
             min_val = None
 
         max_val = get_union_value(param_struct.max_value)
-        if 'uavcan.protocol.param.Empty' in str(max_val):
+        if 'pyuavcan_v0.protocol.param.Empty' in str(max_val):
             max_val = None
 
         value = get_union_value(param_struct.value)
         self._value_widget = None
-        value_type = uavcan.get_active_union_field(param_struct.value)
+        value_type = pyuavcan_v0.get_active_union_field(param_struct.value)
 
         if value_type == 'integer_value':
             min_val = min_val if min_val is not None else -0x8000000000000000
@@ -420,7 +420,7 @@ class ConfigParamEditWindow(QDialog):
                 layout.addLayout(sub_layout, row, 1)
 
         add_const_field('Name', param_struct.name)
-        add_const_field('Type', uavcan.get_active_union_field(param_struct.value).replace('_value', ''))
+        add_const_field('Type', pyuavcan_v0.get_active_union_field(param_struct.value).replace('_value', ''))
         add_const_field('Min/Max', min_val, max_val)
         add_const_field('Default', render_union(param_struct.default_value))
 
@@ -459,7 +459,7 @@ class ConfigParamEditWindow(QDialog):
     def _assign(self, value_union):
         value = get_union_value(value_union)
 
-        if uavcan.get_active_union_field(value_union) == 'real_value':
+        if pyuavcan_v0.get_active_union_field(value_union) == 'real_value':
             value = round_float(value)
 
         if hasattr(self._value_widget, 'setValue'):
@@ -485,7 +485,7 @@ class ConfigParamEditWindow(QDialog):
 
     def _do_fetch(self):
         try:
-            request = uavcan.protocol.param.GetSet.Request(name=self._param_struct.name)
+            request = pyuavcan_v0.protocol.param.GetSet.Request(name=self._param_struct.name)
             self._node.request(request, self._target_node_id, self._on_response, priority=REQUEST_PRIORITY)
         except Exception as ex:
             show_error('Node error', 'Could not send param get request', ex, self)
@@ -493,7 +493,7 @@ class ConfigParamEditWindow(QDialog):
             self.show_message('Fetch request sent')
 
     def _do_send(self):
-        value_type = uavcan.get_active_union_field(self._param_struct.value)
+        value_type = pyuavcan_v0.get_active_union_field(self._param_struct.value)
 
         try:
             if value_type == 'integer_value':
@@ -518,7 +518,7 @@ class ConfigParamEditWindow(QDialog):
             return
 
         try:
-            request = uavcan.protocol.param.GetSet.Request(name=self._param_struct.name,
+            request = pyuavcan_v0.protocol.param.GetSet.Request(name=self._param_struct.name,
                                                            value=self._param_struct.value)
             logger.info('Sending param set request: %s', request)
             self._node.request(request, self._target_node_id, self._on_response, priority=REQUEST_PRIORITY)
@@ -541,7 +541,7 @@ class ConfigParams(QGroupBox):
         self._read_all_button = make_icon_button('refresh', 'Fetch all config parameters from the node', self,
                                                  text='Fetch All', on_clicked=self._do_reload)
 
-        opcodes = uavcan.protocol.param.ExecuteOpcode.Request()
+        opcodes = pyuavcan_v0.protocol.param.ExecuteOpcode.Request()
 
         self._save_button = \
             make_icon_button('database', 'Commit configuration to the non-volatile storage [OPCODE_SAVE]', self,
@@ -558,7 +558,7 @@ class ConfigParams(QGroupBox):
                               lambda m: m[1].name,
                               resize_mode=QHeaderView.Stretch),
             BasicTable.Column('Type',
-                              lambda m: uavcan.get_active_union_field(m[1].value).replace('_value', '')),
+                              lambda m: pyuavcan_v0.get_active_union_field(m[1].value).replace('_value', '')),
             BasicTable.Column('Value',
                               lambda m: render_union(m[1].value),
                               resize_mode=QHeaderView.Stretch),
@@ -613,7 +613,7 @@ class ConfigParams(QGroupBox):
         try:
             index += 1
             self.window().show_message('Requesting index %d', index)
-            self._node.defer(0.1, lambda: self._node.request(uavcan.protocol.param.GetSet.Request(index=index),
+            self._node.defer(0.1, lambda: self._node.request(pyuavcan_v0.protocol.param.GetSet.Request(index=index),
                                                              self._target_node_id,
                                                              partial(self._on_fetch_response, index),
                                                              priority=REQUEST_PRIORITY))
@@ -624,7 +624,7 @@ class ConfigParams(QGroupBox):
     def _do_reload(self):
         try:
             index = 0
-            self._node.request(uavcan.protocol.param.GetSet.Request(index=index),
+            self._node.request(pyuavcan_v0.protocol.param.GetSet.Request(index=index),
                                self._target_node_id,
                                partial(self._on_fetch_response, index),
                                priority=REQUEST_PRIORITY)
@@ -636,8 +636,8 @@ class ConfigParams(QGroupBox):
             self._params = []
 
     def _do_execute_opcode(self, opcode):
-        request = uavcan.protocol.param.ExecuteOpcode.Request(opcode=opcode)
-        opcode_str = uavcan.value_to_constant_name(request, 'opcode', keep_literal=True)
+        request = pyuavcan_v0.protocol.param.ExecuteOpcode.Request(opcode=opcode)
+        opcode_str = pyuavcan_v0.value_to_constant_name(request, 'opcode', keep_literal=True)
 
         if not request_confirmation('Confirm opcode execution',
                                     'Do you really want to execute param opcode %s?' % opcode_str, self):

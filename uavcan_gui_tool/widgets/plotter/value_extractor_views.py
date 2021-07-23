@@ -6,7 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
+import pyuavcan_v0
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QHBoxLayout, QGroupBox, QVBoxLayout, QLineEdit, QSpinBox, \
     QColorDialog, QComboBox, QCompleter, QCheckBox, QApplication
 from PyQt5.QtGui import QColor, QPalette, QFontMetrics
@@ -32,7 +32,7 @@ def _make_expression_completer(owner, data_type):
     comp.setCaseSensitivity(Qt.CaseSensitive)
 
     if isinstance(data_type, str):
-        data_type = uavcan.TYPENAMES[data_type]
+        data_type = pyuavcan_v0.TYPENAMES[data_type]
 
     # TODO: implement proper completion, requires Python lexer
     # TODO: IPython/Jupyter solves the same task splendidly, might make sense to take a closer look at their code
@@ -207,7 +207,7 @@ class NewValueExtractorWindow(QDialog):
         # Data type name
         data_type_name = self._type_selector.currentText()
         try:
-            data_type = uavcan.TYPENAMES[self._type_selector.currentText()]
+            data_type = pyuavcan_v0.TYPENAMES[self._type_selector.currentText()]
             if data_type.kind != data_type.KIND_MESSAGE:
                 show_error('Invalid configuration', 'Selected data type is not a message type', data_type_name, self)
                 return
@@ -254,7 +254,7 @@ class NewValueExtractorWindow(QDialog):
 
     def _on_type_changed(self):
         try:
-            data_type = uavcan.TYPENAMES[self._type_selector.currentText()]
+            data_type = pyuavcan_v0.TYPENAMES[self._type_selector.currentText()]
             if data_type.kind != data_type.KIND_MESSAGE:
                 return
         except KeyError:

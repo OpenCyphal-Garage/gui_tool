@@ -6,8 +6,8 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
-from uavcan.transport import Transfer, Frame
+import pyuavcan_v0
+from pyuavcan_v0.transport import Transfer, Frame
 
 # How many rows will be traversed while looking for beginning/end of a multi frame transfer
 TABLE_TRAVERSING_RANGE = 2000
@@ -66,4 +66,4 @@ def decode_transfer_from_frame(entry_row, row_to_frame):
     tr = Transfer()
     tr.from_frames([Frame(x.id, x.data) for x in frames])
 
-    return related_rows, uavcan.to_yaml(tr.payload)
+    return related_rows, pyuavcan_v0.to_yaml(tr.payload)

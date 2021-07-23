@@ -9,7 +9,7 @@
 import os
 import sys
 import queue
-import uavcan
+import pyuavcan_v0
 import logging
 import multiprocessing
 from PyQt5.QtWidgets import QApplication
@@ -106,7 +106,7 @@ class CompactMessage:
             except KeyError:
                 pass
             try:
-                return getattr(uavcan.TYPENAMES[self._uavcan_data_type_name](), item)
+                return getattr(pyuavcan_v0.TYPENAMES[self._uavcan_data_type_name](), item)
             except KeyError:
                 pass
         raise AttributeError(item)
@@ -114,25 +114,25 @@ class CompactMessage:
 
 # noinspection PyProtectedMember
 def _extract_struct_fields(m):
-    if isinstance(m, uavcan.transport.CompoundValue):
-        out = CompactMessage(uavcan.get_uavcan_data_type(m).full_name)
-        for field_name, field in uavcan.get_fields(m).items():
-            if uavcan.is_union(m) and uavcan.get_active_union_field(m) != field_name:
+    if isinstance(m, pyuavcan_v0.transport.CompoundValue):
+        out = CompactMessage(pyuavcan_v0.get_uavcan_data_type(m).full_name)
+        for field_name, field in pyuavcan_v0.get_fields(m).items():
+            if pyuavcan_v0.is_union(m) and pyuavcan_v0.get_active_union_field(m) != field_name:
                 continue
             val = _extract_struct_fields(field)
             if val is not None:
                 out._add_field(field_name, val)
         return out
-    elif isinstance(m, uavcan.transport.ArrayValue):
+    elif isinstance(m, pyuavcan_v0.transport.ArrayValue):
         # cannot say I'm breaking the rules
-        container = bytes if uavcan.get_uavcan_data_type(m).is_string_like else list
+        container = bytes if pyuavcan_v0.get_uavcan_data_type(m).is_string_like else list
         # if I can glue them back together
         return container(filter(lambda x: x is not None, (_extract_struct_fields(item) for item in m)))
-    elif isinstance(m, uavcan.transport.PrimitiveValue):
+    elif isinstance(m, pyuavcan_v0.transport.PrimitiveValue):
         return m.value
     elif isinstance(m, (int, float, bool)):
         return m
-    elif isinstance(m, uavcan.transport.VoidValue):
+    elif isinstance(m, pyuavcan_v0.transport.VoidValue):
         pass
     else:
         raise ValueError(':(')
@@ -142,7 +142,7 @@ class MessageTransfer:
     def __init__(self, tr):
         self.source_node_id = tr.source_node_id
         self.ts_mono = tr.ts_monotonic
-        self.data_type_name = uavcan.get_uavcan_data_type(tr.payload).full_name
+        self.data_type_name = pyuavcan_v0.get_uavcan_data_type(tr.payload).full_name
         self.message = _extract_struct_fields(tr.payload)
 
 

@@ -6,7 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
+import pyuavcan_v0
 import datetime
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QPushButton, QLabel
 from PyQt5.QtCore import Qt
@@ -35,7 +35,7 @@ class LogMessageDisplayWidget(QGroupBox):
                           .strftime('%H:%M:%S.%f')[:-3],
                           searchable=False),
         BasicTable.Column('Level',
-                          lambda e: (uavcan.value_to_constant_name(e.message.level, 'value'),
+                          lambda e: (pyuavcan_v0.value_to_constant_name(e.message.level, 'value'),
                                      log_level_to_color(e.message.level))),
         BasicTable.Column('Source',
                           lambda e: e.message.source),
@@ -52,7 +52,7 @@ class LogMessageDisplayWidget(QGroupBox):
         self._log_widget.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self._log_widget.table.setWordWrap(True)
 
-        self._subscriber = node.add_handler(uavcan.protocol.debug.LogMessage, self._log_widget.add_item_async)
+        self._subscriber = node.add_handler(pyuavcan_v0.protocol.debug.LogMessage, self._log_widget.add_item_async)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self._log_widget, 1)

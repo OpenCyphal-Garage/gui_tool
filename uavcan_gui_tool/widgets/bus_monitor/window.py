@@ -10,8 +10,8 @@ import datetime
 import time
 import os
 from functools import partial
-import uavcan
-from uavcan.driver import CANFrame
+import pyuavcan_v0
+from pyuavcan_v0.driver import CANFrame
 from PyQt5.QtWidgets import QMainWindow, QHeaderView, QLabel, QSplitter, QSizePolicy, QWidget, QHBoxLayout, \
     QPlainTextEdit, QDialog, QVBoxLayout, QMenu, QAction
 from PyQt5.QtGui import QColor, QIcon, QTextOption
@@ -37,7 +37,7 @@ def parse_can_frame(frame):
             request_not_response = bool((can_id >> 15) & 1)
             service_type_id = (can_id >> 16) & 0xFF
             try:
-                data_type_name = uavcan.DATATYPES[(service_type_id, uavcan.dsdl.CompoundType.KIND_SERVICE)].full_name
+                data_type_name = pyuavcan_v0.DATATYPES[(service_type_id, pyuavcan_v0.dsdl.CompoundType.KIND_SERVICE)].full_name
             except KeyError:
                 data_type_name = '<unknown service %d>' % service_type_id
         else:
@@ -47,7 +47,7 @@ def parse_can_frame(frame):
                 message_type_id &= 0b11
             destination_node_id = ''
             try:
-                data_type_name = uavcan.DATATYPES[(message_type_id, uavcan.dsdl.CompoundType.KIND_MESSAGE)].full_name
+                data_type_name = pyuavcan_v0.DATATYPES[(message_type_id, pyuavcan_v0.dsdl.CompoundType.KIND_MESSAGE)].full_name
             except KeyError:
                 data_type_name = '<unknown message %d>' % message_type_id
     else:
@@ -230,7 +230,7 @@ class BusMonitorWindow(QMainWindow):
         # get dsdl_directory from parent process, if set
         dsdl_directory = os.environ.get('UAVCAN_CUSTOM_DSDL_PATH',None)
         if dsdl_directory:
-            uavcan.load_dsdl(dsdl_directory)
+            pyuavcan_v0.load_dsdl(dsdl_directory)
 
         self._get_frame = get_frame
 
@@ -403,7 +403,7 @@ class BusMonitorWindow(QMainWindow):
     def _show_data_type_definition(self, row):
         try:
             data_type_name = self._log_widget.table.item(row, self._log_widget.table.columnCount() - 1).text()
-            definition = uavcan.TYPENAMES[data_type_name].source_text
+            definition = pyuavcan_v0.TYPENAMES[data_type_name].source_text
         except Exception as ex:
             show_error('Data type lookup error', 'Could not load data type definition', ex, self)
             return
