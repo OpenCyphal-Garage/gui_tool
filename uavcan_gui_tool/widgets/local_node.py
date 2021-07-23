@@ -6,7 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
+import pyuavcan_v0
 from PyQt5.QtWidgets import QGroupBox, QLabel, QSpinBox, QHBoxLayout
 from PyQt5.QtCore import QTimer
 from logging import getLogger
@@ -25,8 +25,8 @@ class LocalNodeWidget(QGroupBox):
         self.setTitle('Local node properties')
 
         self._node = node
-        self._node_id_collector = uavcan.app.message_collector.MessageCollector(
-            self._node, uavcan.protocol.NodeStatus, timeout=uavcan.protocol.NodeStatus().OFFLINE_TIMEOUT_MS * 1e-3)
+        self._node_id_collector = pyuavcan_v0.app.message_collector.MessageCollector(
+            self._node, pyuavcan_v0.protocol.NodeStatus, timeout=pyuavcan_v0.protocol.NodeStatus().OFFLINE_TIMEOUT_MS * 1e-3)
 
         self._node_id_label = QLabel('Set local node ID:', self)
 

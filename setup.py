@@ -50,7 +50,7 @@ args = dict(
     ],
     install_requires=[
         'setuptools>=18.5',
-        'uavcan>=1.0.0.dev29',
+        'pyuavcan_v0>=1.0.0.dev34',
         'pyserial~=3.0',
         'qtawesome~=0.3.1',
         'qtconsole~=4.2.0',

@@ -6,7 +6,7 @@
 # Author: Pavel Kirienko <pavel.kirienko@zubax.com>
 #
 
-import uavcan
+import pyuavcan_v0
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QHeaderView, QPushButton, QFileDialog, \
     QCompleter, QDirModel
 from PyQt5.QtCore import QTimer
@@ -105,7 +105,7 @@ class DynamicNodeIDAllocatorWidget(QGroupBox):
         else:
             try:
                 db_file = self._database_file.currentText()
-                self._allocator = uavcan.app.dynamic_node_id.CentralizedServer(self._node, self._node_monitor,
+                self._allocator = pyuavcan_v0.app.dynamic_node_id.CentralizedServer(self._node, self._node_monitor,
                                                                                database_storage=db_file)
             except Exception as ex:
                 show_error('Error', 'Could not start allocator', str(ex), parent=self)
