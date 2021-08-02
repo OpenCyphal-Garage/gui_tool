@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
                                      'Stops all ongoing tasks of broadcast(), subscribe(), defer(), periodic()'),
             InternalObjectDescriptor('print_yaml', print_yaml,
                                      'Prints UAVCAN entities in YAML format'),
-            InternalObjectDescriptor('uavcan', uavcan,
+            InternalObjectDescriptor('uavcan', pyuavcan_v0,
                                      'The main Pyuavcan module'),
             InternalObjectDescriptor('main_window', self,
                                      'Main window object, holds references to all business logic objects'),
