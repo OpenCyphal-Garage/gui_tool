@@ -7,7 +7,7 @@
 #
 
 import time
-import uavcan
+import pyuavcan_v0
 import logging
 import queue
 from PyQt5.QtWidgets import QWidget, QDialog, QPlainTextEdit, QSpinBox, QHBoxLayout, QVBoxLayout, QComboBox, \
@@ -189,7 +189,7 @@ class SubscriberWindow(QDialog):
 
         # Rendering and filtering
         try:
-            text = uavcan.to_yaml(e)
+            text = pyuavcan_v0.to_yaml(e)
             if not self._apply_filter(text):
                 return
         except Exception as ex:
@@ -230,7 +230,7 @@ class SubscriberWindow(QDialog):
             selected_type = self._type_selector.currentText().strip()
             if not selected_type:
                 return
-            data_type = uavcan.TYPENAMES[selected_type]
+            data_type = pyuavcan_v0.TYPENAMES[selected_type]
         except Exception as ex:
             show_error('Subscription error', 'Could not load requested data type', ex, self)
             return

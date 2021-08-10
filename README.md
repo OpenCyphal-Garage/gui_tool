@@ -1,24 +1,27 @@
-UAVCAN GUI Tool
-===============
+UAVCAN GUI Tool (legacy)
+========================
 
-[![Travis CI](https://travis-ci.org/UAVCAN/gui_tool.svg?branch=master)](https://travis-ci.org/UAVCAN/gui_tool)
-[![Gitter](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/UAVCAN/general)
+UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN/CAN v0 management and diagnostics.
 
-UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN bus management and diagnostics.
+**This is a legacy application; it is not compatible with the stable UAVCAN v1.
+There is [work underway on the new GUI solution called Yukon](https://forum.uavcan.org/c/app/yukon/14)
+that will support UAVCAN v1.
+While Yukon is unavailable, users of UAVCAN v1 are recommended to use the
+[Yakut command line tool](https://github.com/UAVCAN/yakut).**
 
-[Read the docs at **uavcan.org/GUI_Tool**](http://uavcan.org/GUI_Tool).
+[Read the docs at **legacy.uavcan.org/GUI_Tool**](http://legacy.uavcan.org/GUI_Tool).
 
 [Ask questions at **forum.uavcan.org**](https://forum.uavcan.org).
 
 Read installation instructions:
 
-- [**LINUX**](#installing-on-linux)
+- [**GNU/LINUX**](#installing-on-gnulinux)
 - [**WINDOWS**](#installing-on-windows)
-- [**OSX**](#installing-on-osx)
+- [**MACOS**](#installing-on-macos)
 
 ![UAVCAN GUI Tool screenshot](screenshot.png "UAVCAN GUI Tool screenshot")
 
-## Installing on Linux
+## Installing on GNU/Linux
 
 The general approach is simple:
 
@@ -81,8 +84,6 @@ Make sure that `python` can be invoked from the terminal; if it can't, check you
 * Windows 10 SDK.
 [Free edition of Visual Studio is packaged with Windows SDK](https://www.visualstudio.com/).
 
-Then, place the `*.pfx` file containing the code signing certificate in the outer directory
-(the build script will search for `../*.pfx`).
 Having done that, execute the following (the script will prompt you for password to read the certificate file):
 
 ```dos
@@ -94,7 +95,7 @@ python setup.py bdist_msi
 
 Collect the resulting signed MSI from `dist/`.
 
-## Installing on OSX
+## Installing on macOS
 
 OSX support is a bit lacking in the way that installation doesn't create an entry in the applications menu,
 but this issue should be fixed someday in the future.

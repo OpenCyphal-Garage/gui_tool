@@ -7,7 +7,7 @@
 #
 
 import datetime
-import uavcan
+import pyuavcan_v0
 from . import BasicTable, get_monospace_font
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QHeaderView, QLabel
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 
 def node_mode_to_color(mode):
-    s = uavcan.protocol.NodeStatus()
+    s = pyuavcan_v0.protocol.NodeStatus()
     return {
         s.MODE_INITIALIZATION: Qt.cyan,
         s.MODE_MAINTENANCE: Qt.magenta,
@@ -28,7 +28,7 @@ def node_mode_to_color(mode):
 
 
 def node_health_to_color(health):
-    s = uavcan.protocol.NodeStatus()
+    s = pyuavcan_v0.protocol.NodeStatus()
     return {
         s.HEALTH_WARNING: Qt.yellow,
         s.HEALTH_ERROR: Qt.magenta,
@@ -65,10 +65,10 @@ class NodeTable(BasicTable):
                           lambda e: e.info.name if e.info else '?',
                           QHeaderView.Stretch),
         BasicTable.Column('Mode',
-                          lambda e: (uavcan.value_to_constant_name(e.status, 'mode'),
+                          lambda e: (pyuavcan_v0.value_to_constant_name(e.status, 'mode'),
                                      node_mode_to_color(e.status.mode))),
         BasicTable.Column('Health',
-                          lambda e: (uavcan.value_to_constant_name(e.status, 'health'),
+                          lambda e: (pyuavcan_v0.value_to_constant_name(e.status, 'health'),
                                      node_health_to_color(e.status.health))),
         BasicTable.Column('Uptime',
                           lambda e: datetime.timedelta(days=0, seconds=e.status.uptime_sec)),
@@ -84,7 +84,7 @@ class NodeTable(BasicTable):
         self.cellDoubleClicked.connect(lambda row, col: self._call_info_requested_callback_on_row(row))
         self.on_enter_pressed = self._on_enter
 
-        self._monitor = uavcan.app.node_monitor.NodeMonitor(node)
+        self._monitor = pyuavcan_v0.app.node_monitor.NodeMonitor(node)
 
         self._timer = QTimer(self)
         self._timer.setSingleShot(False)

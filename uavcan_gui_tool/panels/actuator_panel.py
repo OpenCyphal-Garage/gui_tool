@@ -1,14 +1,14 @@
 #
-# Copyright (C) 2016  UAVCAN Development Team  <uavcan.org>
+# Copyright (C) 2021  UAVCAN Development Team  <uavcan.org>
 #
 # This software is distributed under the terms of the MIT License.
 #
-# Author: Pavel Kirienko <pavel.kirienko@zubax.com>
+# Author: Tom Pittenger <magicrub@gmail.com>
 #
 
 import pyuavcan_v0
 from functools import partial
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel, QDialog, QSlider, QSpinBox, QDoubleSpinBox, \
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QLabel, QDialog, QSlider, QSpinBox, QDoubleSpinBox, QCheckBox, \
     QPlainTextEdit
 from PyQt5.QtCore import QTimer, Qt
 from logging import getLogger
@@ -16,7 +16,7 @@ from ..widgets import make_icon_button, get_icon, get_monospace_font
 
 __all__ = 'PANEL_NAME', 'spawn', 'get_icon'
 
-PANEL_NAME = 'ESC Panel'
+PANEL_NAME = 'Actuator Panel'
 
 
 logger = getLogger(__name__)
@@ -24,25 +24,37 @@ logger = getLogger(__name__)
 _singleton = None
 
 
+
 class PercentSlider(QWidget):
     def __init__(self, parent):
         super(PercentSlider, self).__init__(parent)
 
         self._slider = QSlider(Qt.Vertical, self)
-        self._slider.setMinimum(-100)
-        self._slider.setMaximum(100)
+        self._slider.setMinimum(-1000)
+        self._slider.setMaximum(1000)
         self._slider.setValue(0)
-        self._slider.setTickInterval(100)
+        self._slider.setTickInterval(1000)
         self._slider.setTickPosition(QSlider.TicksBothSides)
-        self._slider.valueChanged.connect(lambda: self._spinbox.setValue(self._slider.value()))
+        self._slider.valueChanged.connect(lambda: self._spinbox.setValue(self._slider.value()/1000.0))
 
-        self._spinbox = QSpinBox(self)
-        self._spinbox.setMinimum(-100)
-        self._spinbox.setMaximum(100)
+        self._spinbox = QDoubleSpinBox(self)
+        self._spinbox.setMinimum(-1)
+        self._spinbox.setMaximum(1)
         self._spinbox.setValue(0)
-        self._spinbox.valueChanged.connect(lambda: self._slider.setValue(self._spinbox.value()))
+        self._spinbox.setDecimals(3)
+        self._spinbox.setSingleStep(0.001)
+        self._spinbox.valueChanged.connect(lambda: self._slider.setValue(self._spinbox.value()*1000.0))
 
-        self._zero_button = make_icon_button('hand-stop-o', 'Zero setpoint', self, on_clicked=self.zero)
+        self._zero_button = make_icon_button('hand-stop-o', 'Zero setpoint', self, text = 'Zero', on_clicked=self.zero)
+
+        self._actuator_id = QSpinBox(self)
+        self._actuator_id.setMinimum(0)
+        self._actuator_id.setMaximum(15)
+        self._actuator_id.setValue(0)
+        self._actuator_id.setPrefix('ID: ')
+
+        self._enabled = QCheckBox('Enabled', self)
+        self._enabled.setGeometry(0, 0, 10, 10)
 
         layout = QVBoxLayout(self)
         sub_layout = QHBoxLayout(self)
@@ -52,6 +64,8 @@ class PercentSlider(QWidget):
         layout.addLayout(sub_layout)
         layout.addWidget(self._spinbox)
         layout.addWidget(self._zero_button)
+        layout.addWidget(self._actuator_id)
+        layout.addWidget(self._enabled)
         self.setLayout(layout)
 
         self.setMinimumHeight(400)
@@ -60,19 +74,21 @@ class PercentSlider(QWidget):
         self._slider.setValue(0)
 
     def get_value(self):
-        return self._slider.value()
+        return self._spinbox.value()
+
+    def get_actuator_id(self):
+        return self._actuator_id.value()
+
+    def is_enabled(self):
+        return self._enabled.isChecked()
 
 
-class ESCPanel(QDialog):
+class ActuatorPanel(QDialog):
     DEFAULT_INTERVAL = 0.1
 
-    CMD_BIT_LENGTH = pyuavcan_v0.get_uavcan_data_type(pyuavcan_v0.equipment.esc.RawCommand().cmd).value_type.bitlen
-    CMD_MAX = 2 ** (CMD_BIT_LENGTH - 1) - 1
-    CMD_MIN = -(2 ** (CMD_BIT_LENGTH - 1))
-
     def __init__(self, parent, node):
-        super(ESCPanel, self).__init__(parent)
-        self.setWindowTitle('ESC Management Panel')
+        super(ActuatorPanel, self).__init__(parent)
+        self.setWindowTitle('Actuator Management Panel')
         self.setAttribute(Qt.WA_DeleteOnClose)              # This is required to stop background timers!
 
         self._node = node
@@ -87,13 +103,13 @@ class ESCPanel(QDialog):
 
         self._bcast_interval = QDoubleSpinBox(self)
         self._bcast_interval.setMinimum(0.01)
-        self._bcast_interval.setMaximum(1.0)
-        self._bcast_interval.setSingleStep(0.1)
+        self._bcast_interval.setMaximum(9.9)
+        self._bcast_interval.setSingleStep(0.01)
         self._bcast_interval.setValue(self.DEFAULT_INTERVAL)
         self._bcast_interval.valueChanged.connect(
             lambda: self._bcast_timer.setInterval(self._bcast_interval.value() * 1e3))
 
-        self._stop_all = make_icon_button('hand-stop-o', 'Zero all channels', self, text='Stop All',
+        self._stop_all = make_icon_button('hand-stop-o', 'Zero all channels', self, text='Zero All',
                                           on_clicked=self._do_stop_all)
 
         self._pause = make_icon_button('pause', 'Pause publishing', self, checkable=True, text='Pause')
@@ -137,11 +153,16 @@ class ESCPanel(QDialog):
     def _do_broadcast(self):
         try:
             if not self._pause.isChecked():
-                msg = pyuavcan_v0.equipment.esc.RawCommand()
+#                msg = pyuavcan_v0.equipment.esc.RawCommand()
+                msg = pyuavcan_v0.equipment.actuator.ArrayCommand()
                 for sl in self._sliders:
-                    raw_value = sl.get_value() / 100
-                    value = (-self.CMD_MIN if raw_value < 0 else self.CMD_MAX) * raw_value
-                    msg.cmd.append(int(value))
+                    if sl.is_enabled() == False:
+                        continue
+                    msg_cmd = pyuavcan_v0.equipment.actuator.Command()
+                    msg_cmd.actuator_id = sl.get_actuator_id()
+                    msg_cmd.command_value = sl.get_value()
+                    msg_cmd.command_type = 0
+                    msg.commands.append(msg_cmd)
 
                 self._node.broadcast(msg)
                 self._msg_viewer.setPlainText(pyuavcan_v0.to_yaml(msg))
@@ -183,13 +204,13 @@ class ESCPanel(QDialog):
     def closeEvent(self, event):
         global _singleton
         _singleton = None
-        super(ESCPanel, self).closeEvent(event)
+        super(ActuatorPanel, self).closeEvent(event)
 
 
 def spawn(parent, node):
     global _singleton
     if _singleton is None:
-        _singleton = ESCPanel(parent, node)
+        _singleton = ActuatorPanel(parent, node)
 
     _singleton.show()
     _singleton.raise_()

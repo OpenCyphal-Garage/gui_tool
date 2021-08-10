@@ -59,7 +59,7 @@ if multiprocessing.get_start_method(True) != 'spawn':
 #
 # Importing other stuff once the logging has been configured
 #
-import uavcan
+import pyuavcan_v0
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QSplitter, QAction
 from PyQt5.QtGui import QKeySequence, QDesktopServices
@@ -87,7 +87,7 @@ from .widgets.can_adapter_control_panel import spawn_window as spawn_can_adapter
 from .panels import PANELS
 
 
-NODE_NAME = 'org.uavcan.gui_tool'
+NODE_NAME = 'org.pyuavcan_v0.gui_tool'
 
 
 class MainWindow(QMainWindow):
@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
         # Help menu
         #
         uavcan_website_action = QAction(get_icon('globe'), 'Open UAVCAN &Website', self)
-        uavcan_website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('http://uavcan.org')))
+        uavcan_website_action.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('http://pyuavcan_v0.org')))
 
         show_log_directory_action = QAction(get_icon('pencil-square-o'), 'Open &Log Directory', self)
         show_log_directory_action.triggered.connect(
@@ -248,10 +248,13 @@ class MainWindow(QMainWindow):
 
         def print_yaml(obj):
             """
-            Formats the argument as YAML structure using uavcan.to_yaml(), and prints the result into stdout.
+            Formats the argument as YAML structure using pyuavcan_v0.to_yaml(), and prints the result into stdout.
             Use this function to print received UAVCAN structures.
             """
-            print(uavcan.to_yaml(obj))
+            if obj is None:
+                return
+
+            print(pyuavcan_v0.to_yaml(obj))
 
         def throw_if_anonymous():
             if self._node.is_anonymous:
@@ -263,15 +266,15 @@ class MainWindow(QMainWindow):
             """
             Sends a service request to the specified node. This is a convenient wrapper over node.request().
             Args:
-                payload:        Request payload of type CompoundValue, e.g. uavcan.protocol.GetNodeInfo.Request()
+                payload:        Request payload of type CompoundValue, e.g. pyuavcan_v0.protocol.GetNodeInfo.Request()
                 server_node_id: Node ID of the node that will receive the request.
                 callback:       Response callback. Default handler will print the response to stdout in YAML format.
                 priority:       Transfer priority; defaults to a very low priority.
                 timeout:        Response timeout, default is set according to the UAVCAN specification.
             """
-            if isinstance(payload, uavcan.dsdl.CompoundType):
+            if isinstance(payload, pyuavcan_v0.dsdl.CompoundType):
                 print('Interpreting the first argument as:', payload.full_name + '.Request()')
-                payload = uavcan.TYPENAMES[payload.full_name].Request()
+                payload = pyuavcan_v0.TYPENAMES[payload.full_name].Request()
             throw_if_anonymous()
             priority = priority or default_transfer_priority
             callback = callback or print_yaml
@@ -280,13 +283,13 @@ class MainWindow(QMainWindow):
         def serve(uavcan_type, callback):
             """
             Registers a service server. The callback will be invoked every time the local node receives a
-            service request of the specified type. The callback accepts an uavcan.Event object
+            service request of the specified type. The callback accepts an pyuavcan_v0.Event object
             (refer to the PyUAVCAN documentation for more info), and returns the response object.
             Example:
                 >>> def serve_acs(e):
                 >>>     print_yaml(e.request)
-                >>>     return uavcan.protocol.AccessCommandShell.Response()
-                >>> serve(uavcan.protocol.AccessCommandShell, serve_acs)
+                >>>     return pyuavcan_v0.protocol.AccessCommandShell.Response()
+                >>> serve(pyuavcan_v0.protocol.AccessCommandShell, serve_acs)
             Args:
                 uavcan_type:    UAVCAN service type to serve requests of.
                 callback:       Service callback with the business logic, see above.
@@ -313,13 +316,13 @@ class MainWindow(QMainWindow):
             more info. Multiple termination conditions will be joined with logical OR operation.
             Example:
                 # Send one message:
-                >>> broadcast(uavcan.protocol.debug.KeyValue(key='key', value=123))
+                >>> broadcast(pyuavcan_v0.protocol.debug.KeyValue(key='key', value=123))
                 # Repeat message every 100 milliseconds for 10 seconds:
-                >>> broadcast(uavcan.protocol.NodeStatus(), interval=0.1, duration=10)
+                >>> broadcast(pyuavcan_v0.protocol.NodeStatus(), interval=0.1, duration=10)
                 # Send 100 messages with 10 millisecond interval:
-                >>> broadcast(uavcan.protocol.Panic(reason_text='42!'), interval=0.01, count=100)
+                >>> broadcast(pyuavcan_v0.protocol.Panic(reason_text='42!'), interval=0.01, count=100)
             Args:
-                payload:    UAVCAN message structure, e.g. uavcan.protocol.debug.KeyValue(key='key', value=123)
+                payload:    UAVCAN message structure, e.g. pyuavcan_v0.protocol.debug.KeyValue(key='key', value=123)
                 priority:   Transfer priority; defaults to a very low priority.
                 interval:   Broadcasting interval in seconds.
                             If specified, the message will be re-published in the background with this interval.
@@ -337,9 +340,9 @@ class MainWindow(QMainWindow):
                         If no periodic broadcasting is configured, this function returns nothing.
             """
             # Validating inputs
-            if isinstance(payload, uavcan.dsdl.CompoundType):
+            if isinstance(payload, pyuavcan_v0.dsdl.CompoundType):
                 print('Interpreting the first argument as:', payload.full_name + '()')
-                payload = uavcan.TYPENAMES[payload.full_name]()
+                payload = pyuavcan_v0.TYPENAMES[payload.full_name]()
 
             if (interval is None) and (duration is not None or count is not None):
                 raise RuntimeError('Cannot setup background broadcaster: interval is not set')
@@ -369,7 +372,7 @@ class MainWindow(QMainWindow):
                         num_broadcasted += 1
                         if (count is not None and num_broadcasted >= count) or (time.monotonic() >= deadline):
                             logger.info('Background publisher for %r has stopped',
-                                        uavcan.get_uavcan_data_type(payload).full_name)
+                                        pyuavcan_v0.get_uavcan_data_type(payload).full_name)
                             timer_handle.remove()
 
                 timer_handle = self._node.periodic(interval, process_next)
@@ -499,7 +502,7 @@ class MainWindow(QMainWindow):
                                      'Stops all ongoing tasks of broadcast(), subscribe(), defer(), periodic()'),
             InternalObjectDescriptor('print_yaml', print_yaml,
                                      'Prints UAVCAN entities in YAML format'),
-            InternalObjectDescriptor('uavcan', uavcan,
+            InternalObjectDescriptor('uavcan', pyuavcan_v0,
                                      'The main Pyuavcan module'),
             InternalObjectDescriptor('main_window', self,
                                      'Main window object, holds references to all business logic objects'),
@@ -580,7 +583,7 @@ def main():
         try:
             if dsdl_directory:
                 logger.info('Loading custom DSDL from %r', dsdl_directory)
-                uavcan.load_dsdl(dsdl_directory)
+                pyuavcan_v0.load_dsdl(dsdl_directory)
                 logger.info('Custom DSDL loaded successfully')
 
                 # setup an environment variable for sub-processes to know where to load custom DSDL from
@@ -594,19 +597,19 @@ def main():
 
         # Trying to start the node on the specified interface
         try:
-            node_info = uavcan.protocol.GetNodeInfo.Response()
+            node_info = pyuavcan_v0.protocol.GetNodeInfo.Response()
             node_info.name = NODE_NAME
             node_info.software_version.major = __version__[0]
             node_info.software_version.minor = __version__[1]
 
-            node = uavcan.make_node(iface,
+            node = pyuavcan_v0.make_node(iface,
                                     node_info=node_info,
-                                    mode=uavcan.protocol.NodeStatus().MODE_OPERATIONAL,
+                                    mode=pyuavcan_v0.protocol.NodeStatus().MODE_OPERATIONAL,
                                     **iface_kwargs)
 
             # Making sure the interface is alright
             node.spin(0.1)
-        except uavcan.transport.TransferError:
+        except pyuavcan_v0.transport.TransferError:
             # allow unrecognized messages on startup:
             logger.warning('UAVCAN Transfer Error occurred on startup', exc_info=True)
             break
