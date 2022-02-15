@@ -3,11 +3,13 @@ UAVCAN GUI Tool (legacy)
 
 UAVCAN GUI Tool is a cross-platform (Windows/Linux/OSX) application for UAVCAN/CAN v0 management and diagnostics.
 
-**This is a legacy application; it is not compatible with the stable UAVCAN v1.
-There is [work underway on the new GUI solution called Yukon](https://forum.uavcan.org/c/app/yukon/14)
-that will support UAVCAN v1.
-While Yukon is unavailable, users of UAVCAN v1 are recommended to use the
-[Yakut command line tool](https://github.com/UAVCAN/yakut).**
+This is a legacy application; it is not compatible with the stable UAVCAN v1 and is no longer actively maintained.
+**Users of UAVCAN v1 should use the [Yakut command line tool](https://github.com/UAVCAN/yakut) instead.**
+
+Users who are looking for continued support of the legacy protocol should consider the fork named
+[DroneCAN GUI Tool](https://github.com/dronecan/gui_tool).
+The DroneCAN project is an independent effort to provide continued support
+for the legacy UAVCAN/CAN v0 protocol under a new name.
 
 [Read the docs at **legacy.uavcan.org/GUI_Tool**](http://legacy.uavcan.org/GUI_Tool).
 
